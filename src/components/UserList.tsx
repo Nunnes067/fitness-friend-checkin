@@ -8,6 +8,7 @@ import { getTodayCheckins } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';  // Added the missing import for cn utility
 
 interface User {
   id: string;
