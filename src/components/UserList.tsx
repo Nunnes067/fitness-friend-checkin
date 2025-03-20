@@ -35,7 +35,8 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
         }
         
         if (data) {
-          setUsers(data as User[]);
+          // Type assertion to make TypeScript happy
+          setUsers(data as unknown as User[]);
         }
       } catch (err) {
         console.error('Unexpected error:', err);

@@ -12,9 +12,6 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Add framer-motion for smoother transitions
-<lov-add-dependency>framer-motion@latest</lov-add-dependency>
-
 // Inner component to use useLocation hook
 const AnimatedRoutes = () => {
   const location = useLocation();
