@@ -5,6 +5,7 @@ import { Trophy, CheckCircle, Dumbbell } from 'lucide-react';
 import { toast } from 'sonner';
 import { checkIn } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 interface CheckInButtonProps {
   userId: string;
@@ -18,8 +19,8 @@ export function CheckInButton({ userId, onCheckInSuccess, hasCheckedInToday }: C
   
   const handleCheckIn = async () => {
     if (hasCheckedInToday) {
-      toast.info("You've already checked in today!", {
-        description: "Come back tomorrow for your next check-in."
+      toast.info("Você já fez check-in hoje!", {
+        description: "Volte amanhã para seu próximo check-in."
       });
       return;
     }
@@ -30,15 +31,15 @@ export function CheckInButton({ userId, onCheckInSuccess, hasCheckedInToday }: C
       const { data, error, alreadyCheckedIn } = await checkIn(userId);
       
       if (error) {
-        toast.error('Check-in failed', {
+        toast.error('Falha no check-in', {
           description: error.message,
         });
         return;
       }
       
       if (alreadyCheckedIn) {
-        toast.info("You've already checked in today!", {
-          description: "Come back tomorrow for your next check-in."
+        toast.info("Você já fez check-in hoje!", {
+          description: "Volte amanhã para seu próximo check-in."
         });
         return;
       }
@@ -51,8 +52,8 @@ export function CheckInButton({ userId, onCheckInSuccess, hasCheckedInToday }: C
         setShowSuccess(false);
         
         // Show success toast
-        toast.success('Check-in successful!', {
-          description: "You've logged your gym attendance for today.",
+        toast.success('Check-in realizado com sucesso!', {
+          description: "Sua presença na academia foi registrada hoje.",
           icon: <Trophy className="h-4 w-4 text-yellow-500" />,
         });
         
@@ -61,7 +62,7 @@ export function CheckInButton({ userId, onCheckInSuccess, hasCheckedInToday }: C
       }, 2000);
       
     } catch (err) {
-      toast.error('An unexpected error occurred');
+      toast.error('Ocorreu um erro inesperado');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -71,27 +72,37 @@ export function CheckInButton({ userId, onCheckInSuccess, hasCheckedInToday }: C
   return (
     <div className="relative">
       {showSuccess && (
-        <div className="absolute inset-0 flex items-center justify-center animate-scale-in">
+        <motion.div 
+          className="absolute inset-0 flex items-center justify-center"
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.5, opacity: 0 }}
+        >
           <CheckCircle className="h-16 w-16 text-green-500" />
-        </div>
+        </motion.div>
       )}
       
-      <Button
-        size="lg"
-        className={cn(
-          "transition-all duration-500 h-16 px-8 rounded-full font-semibold",
-          showSuccess ? "opacity-0" : "opacity-100",
-          hasCheckedInToday ? "bg-secondary text-foreground hover:bg-secondary/90" : "bg-primary hover:bg-primary/90"
-        )}
-        disabled={isLoading || showSuccess}
-        onClick={handleCheckIn}
+      <motion.div
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
       >
-        <Dumbbell className={cn(
-          "mr-2 h-5 w-5 transition-transform duration-300",
-          isLoading ? "animate-pulse" : ""
-        )} />
-        {hasCheckedInToday ? "Checked in Today" : "Check In Now"}
-      </Button>
+        <Button
+          size="lg"
+          className={cn(
+            "transition-all duration-500 h-16 px-8 rounded-full font-semibold",
+            showSuccess ? "opacity-0" : "opacity-100",
+            hasCheckedInToday ? "bg-secondary text-foreground hover:bg-secondary/90" : "bg-primary hover:bg-primary/90"
+          )}
+          disabled={isLoading || showSuccess}
+          onClick={handleCheckIn}
+        >
+          <Dumbbell className={cn(
+            "mr-2 h-5 w-5 transition-transform duration-300",
+            isLoading ? "animate-pulse" : ""
+          )} />
+          {hasCheckedInToday ? "Já registrou hoje" : "Fazer Check-in Agora"}
+        </Button>
+      </motion.div>
     </div>
   );
 }

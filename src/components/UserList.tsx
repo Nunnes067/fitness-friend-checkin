@@ -6,6 +6,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { getTodayCheckins } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { motion } from 'framer-motion';
 
 interface User {
   id: string;
@@ -22,6 +24,7 @@ interface User {
 export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     const fetchCheckins = async () => {
@@ -30,7 +33,7 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
         const { data, error } = await getTodayCheckins();
         
         if (error) {
-          console.error('Error fetching checkins:', error);
+          console.error('Erro ao buscar check-ins:', error);
           return;
         }
         
@@ -39,7 +42,7 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
           setUsers(data as unknown as User[]);
         }
       } catch (err) {
-        console.error('Unexpected error:', err);
+        console.error('Erro inesperado:', err);
       } finally {
         setIsLoading(false);
       }
@@ -53,11 +56,11 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
     const checkinTime = new Date(timestamp);
     const diffInMinutes = Math.floor((now.getTime() - checkinTime.getTime()) / (1000 * 60));
     
-    if (diffInMinutes < 1) return 'just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1) return 'agora mesmo';
+    if (diffInMinutes < 60) return `${diffInMinutes}m atrás`;
     
     const diffInHours = Math.floor(diffInMinutes / 60);
-    return `${diffInHours}h ago`;
+    return `${diffInHours}h atrás`;
   };
   
   const getInitials = (name: string | null) => {
@@ -68,47 +71,78 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { 
+        staggerChildren: 0.05
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { type: 'spring', stiffness: 300, damping: 24 }
+    }
+  };
+
   return (
     <Card className="glass-card w-full">
       <CardHeader className="pb-3">
-        <CardTitle className="text-xl">Today's Check-ins</CardTitle>
+        <CardTitle className="text-xl">Check-ins de Hoje</CardTitle>
         <CardDescription>
           {users.length > 0 
-            ? `${users.length} member${users.length === 1 ? '' : 's'} checked in today`
-            : 'No one has checked in yet today'
+            ? `${users.length} membro${users.length === 1 ? '' : 's'} registrou presença hoje`
+            : 'Ninguém fez check-in ainda hoje'
           }
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[380px] pr-4">
+        <ScrollArea className={cn("pr-4", isMobile ? "h-[320px]" : "h-[380px]")}>
           {isLoading ? (
-            Array(5).fill(0).map((_, i) => (
-              <div key={i} className="flex items-center space-x-4 py-3">
-                <Skeleton className="h-10 w-10 rounded-full" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-3 w-16" />
-                </div>
-              </div>
-            ))
-          ) : (
             <div className="space-y-4">
-              {users.length === 0 && (
-                <div className="py-8 text-center text-muted-foreground">
-                  Be the first to check in today!
+              {Array(5).fill(0).map((_, i) => (
+                <div key={i} className="flex items-center space-x-4 py-3">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
                 </div>
+              ))}
+            </div>
+          ) : (
+            <motion.div 
+              className="space-y-4"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {users.length === 0 && (
+                <motion.div 
+                  className="py-8 text-center text-muted-foreground"
+                  variants={itemVariants}
+                >
+                  Seja o primeiro a fazer check-in hoje!
+                </motion.div>
               )}
               
               {users.map((user) => (
-                <div 
+                <motion.div 
                   key={user.id} 
                   className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-secondary/50 transition-colors"
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.02 }}
                 >
                   <div className="flex items-center space-x-3">
                     <Avatar className="h-10 w-10 border border-border">
                       <AvatarImage 
                         src={user.app_users?.photo_url || ''} 
-                        alt={user.app_users?.name || 'User'} 
+                        alt={user.app_users?.name || 'Usuário'} 
                       />
                       <AvatarFallback>
                         {getInitials(user.app_users?.name)}
@@ -116,8 +150,8 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
                     </Avatar>
                     
                     <div>
-                      <div className="font-medium leading-none">
-                        {user.app_users?.name || 'Anonymous User'}
+                      <div className="font-medium leading-none truncate max-w-[120px] md:max-w-full">
+                        {user.app_users?.name || 'Usuário Anônimo'}
                       </div>
                       <div className="text-sm text-muted-foreground mt-1">
                         {getTimeAgo(user.timestamp)}
@@ -126,11 +160,11 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
                   </div>
                   
                   <Badge variant="secondary" className="text-xs">
-                    Checked In
+                    Registrado
                   </Badge>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
         </ScrollArea>
       </CardContent>

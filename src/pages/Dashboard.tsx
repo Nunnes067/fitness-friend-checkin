@@ -10,7 +10,9 @@ import { CheckInButton } from '@/components/CheckInButton';
 import { UserList } from '@/components/UserList';
 import { WeeklyRanking } from '@/components/WeeklyRanking';
 import { AnimatedLogo } from '@/components/ui/AnimatedLogo';
-import { LogOut, User, Calendar, Settings } from 'lucide-react';
+import { LogOut, User, Calendar, Settings, Share2 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { motion } from 'framer-motion';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -18,6 +20,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -39,9 +42,9 @@ const Dashboard = () => {
           setHasCheckedInToday(!!userCheckIn);
         }
       } catch (err) {
-        console.error('Auth check error:', err);
-        toast.error('Session expired', {
-          description: 'Please log in again',
+        console.error('Erro ao verificar autenticação:', err);
+        toast.error('Sessão expirada', {
+          description: 'Por favor, faça login novamente',
         });
         navigate('/');
       } finally {
@@ -57,8 +60,8 @@ const Dashboard = () => {
       await signOut();
       navigate('/');
     } catch (err) {
-      console.error('Sign out error:', err);
-      toast.error('Sign out failed');
+      console.error('Erro ao sair:', err);
+      toast.error('Falha ao sair');
     }
   };
   
@@ -66,14 +69,41 @@ const Dashboard = () => {
     setHasCheckedInToday(true);
     setRefreshTrigger(prev => prev + 1);
   };
+
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'CheckMate - Meu check-in da academia',
+          text: 'Acabei de registrar minha presença na academia usando o CheckMate!',
+          url: window.location.href,
+        });
+      } else {
+        // Fallback for browsers that don't support the Web Share API
+        navigator.clipboard.writeText(window.location.href);
+        toast.success('Link copiado para a área de transferência!');
+      }
+    } catch (error) {
+      console.error('Erro ao compartilhar:', error);
+    }
+  };
   
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse-light">Loading dashboard...</div>
+        <div className="animate-pulse-light">Carregando painel...</div>
       </div>
     );
   }
+
+  const fadeInUpVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.5, ease: "easeOut" }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/30">
@@ -84,11 +114,11 @@ const Dashboard = () => {
             <h1 className="text-xl font-semibold tracking-tight">CheckMate</h1>
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 md:space-x-4">
             <Button
               variant="ghost"
               size="sm"
-              className="text-muted-foreground"
+              className="text-muted-foreground hidden md:flex"
               onClick={() => navigate('/profile')}
             >
               <User className="h-4 w-4 mr-2" />
@@ -98,8 +128,18 @@ const Dashboard = () => {
             <Button
               variant="ghost"
               size="icon"
+              onClick={() => navigate('/profile')}
+              title="Perfil"
+              className="md:hidden"
+            >
+              <User className="h-4 w-4" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={handleSignOut}
-              title="Sign out"
+              title="Sair"
             >
               <LogOut className="h-4 w-4" />
             </Button>
@@ -109,21 +149,32 @@ const Dashboard = () => {
       
       <main className="container mx-auto py-8 px-4 sm:px-6 animate-fade-in">
         <div className="max-w-6xl mx-auto">
-          <section className="mb-12 text-center">
-            <h1 className="text-3xl font-bold tracking-tight mb-2">Welcome to CheckMate</h1>
+          <motion.section 
+            className="mb-12 text-center"
+            initial="hidden"
+            animate="visible"
+            variants={fadeInUpVariants}
+          >
+            <h1 className="text-3xl font-bold tracking-tight mb-2">Bem-vindo ao CheckMate</h1>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Track your gym attendance, stay motivated, and compete with friends - all in one place.
+              Acompanhe sua presença na academia, mantenha-se motivado e compare com amigos - tudo em um só lugar.
             </p>
-          </section>
+          </motion.section>
           
-          <section className="mb-12">
+          <motion.section 
+            className="mb-12"
+            initial="hidden"
+            animate="visible"
+            variants={fadeInUpVariants}
+            transition={{ delay: 0.1 }}
+          >
             <Card className="glass-card overflow-hidden border border-border/40">
-              <CardContent className="p-8 flex flex-col items-center text-center">
-                <h2 className="text-2xl font-bold mb-6">Ready for today's workout?</h2>
-                <p className="text-muted-foreground mb-8 max-w-md">
+              <CardContent className="p-6 md:p-8 flex flex-col items-center text-center">
+                <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Pronto para o treino de hoje?</h2>
+                <p className="text-muted-foreground mb-6 md:mb-8 max-w-md">
                   {hasCheckedInToday 
-                    ? "You've already checked in for today. Come back tomorrow!" 
-                    : "Record your gym attendance by checking in below"}
+                    ? "Você já fez check-in hoje. Volte amanhã!" 
+                    : "Registre sua presença na academia fazendo check-in abaixo"}
                 </p>
                 
                 <CheckInButton 
@@ -132,24 +183,59 @@ const Dashboard = () => {
                   hasCheckedInToday={hasCheckedInToday}
                 />
                 
-                <div className="mt-8 text-sm text-muted-foreground flex items-center">
+                <div className="mt-6 md:mt-8 text-sm text-muted-foreground flex items-center">
                   <Calendar className="h-4 w-4 mr-2" />
-                  Check-ins reset every day at midnight
+                  Os check-ins são reiniciados todos os dias à meia-noite
                 </div>
+
+                {hasCheckedInToday && (
+                  <motion.div 
+                    className="mt-4"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleShare}
+                      className="flex items-center gap-2"
+                    >
+                      <Share2 className="h-4 w-4" />
+                      Compartilhar meu check-in
+                    </Button>
+                  </motion.div>
+                )}
               </CardContent>
             </Card>
-          </section>
+          </motion.section>
           
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-            <UserList refreshTrigger={refreshTrigger} />
-            <WeeklyRanking />
-          </section>
+          <motion.section 
+            className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-12"
+            initial="hidden"
+            animate="visible"
+            variants={fadeInUpVariants}
+            transition={{ delay: 0.2 }}
+          >
+            <motion.div 
+              variants={fadeInUpVariants}
+              transition={{ delay: 0.3 }}
+            >
+              <UserList refreshTrigger={refreshTrigger} />
+            </motion.div>
+            <motion.div 
+              variants={fadeInUpVariants}
+              transition={{ delay: 0.4 }}
+            >
+              <WeeklyRanking />
+            </motion.div>
+          </motion.section>
         </div>
       </main>
       
       <footer className="border-t border-border/40 py-6 text-center text-sm text-muted-foreground">
         <div className="container mx-auto">
-          CheckMate - Your daily gym companion
+          CheckMate - Seu companheiro diário na academia
         </div>
       </footer>
     </div>
