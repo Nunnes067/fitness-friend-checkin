@@ -140,7 +140,7 @@ export function WeeklyRanking() {
                     <Avatar className="h-9 w-9 border border-border">
                       <AvatarImage 
                         src={user.profile?.photo_url || ''} 
-                        alt={user.profile?.name || 'Usuário'} 
+                        alt={user.profile?.email || 'Usuário'} 
                       />
                       <AvatarFallback>
                         {getInitials(user.profile?.name)}
@@ -148,7 +148,7 @@ export function WeeklyRanking() {
                     </Avatar>
                     
                     <div className="font-medium truncate max-w-[120px] md:max-w-full">
-                      {user.profile?.name || 'Usuário Anônimo'}
+                      {user.profile?.email || 'Usuário Anônimo'}
                     </div>
                   </div>
                   

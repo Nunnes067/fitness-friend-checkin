@@ -143,7 +143,7 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
                     <Avatar className="h-10 w-10 border border-border">
                       <AvatarImage 
                         src={user.app_users?.photo_url || ''} 
-                        alt={user.app_users?.name || 'Usuário'} 
+                        alt={user.app_users?.email || 'Usuário'} 
                       />
                       <AvatarFallback>
                         {getInitials(user.app_users?.name)}
@@ -152,7 +152,7 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
                     
                     <div>
                       <div className="font-medium leading-none truncate max-w-[120px] md:max-w-full">
-                        {user.app_users?.name || 'Usuário Anônimo'}
+                        {user.app_users?.email || 'Usuário Anônimo'}
                       </div>
                       <div className="text-sm text-muted-foreground mt-1">
                         {getTimeAgo(user.timestamp)}
