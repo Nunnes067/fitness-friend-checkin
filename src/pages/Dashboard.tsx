@@ -5,12 +5,15 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getCurrentUser, getTodayCheckins, signOut } from '@/lib/supabase';
 import { CheckInButton } from '@/components/CheckInButton';
 import { UserList } from '@/components/UserList';
 import { WeeklyRanking } from '@/components/WeeklyRanking';
+import { ProgressTracking } from '@/components/ProgressTracking';
+import { WorkoutForm } from '@/components/WorkoutForm';
 import { AnimatedLogo } from '@/components/ui/AnimatedLogo';
-import { LogOut, User, Calendar, Settings, Share2 } from 'lucide-react';
+import { LogOut, User, Calendar, Settings, Share2, Camera, Dumbbell } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion } from 'framer-motion';
 
@@ -20,6 +23,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [activeTab, setActiveTab] = useState('check-in');
   const isMobile = useIsMobile();
   
   useEffect(() => {
@@ -210,26 +214,64 @@ const Dashboard = () => {
             </Card>
           </motion.section>
           
-          <motion.section 
-            className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-12"
-            initial="hidden"
-            animate="visible"
-            variants={fadeInUpVariants}
-            transition={{ delay: 0.2 }}
-          >
-            <motion.div 
-              variants={fadeInUpVariants}
-              transition={{ delay: 0.3 }}
-            >
-              <UserList refreshTrigger={refreshTrigger} />
-            </motion.div>
-            <motion.div 
-              variants={fadeInUpVariants}
-              transition={{ delay: 0.4 }}
-            >
-              <WeeklyRanking />
-            </motion.div>
-          </motion.section>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-12">
+            <TabsList className="grid grid-cols-3 mb-6">
+              <TabsTrigger value="check-in" className="flex items-center">
+                <Calendar className="h-4 w-4 mr-2" />
+                <span>Check-ins</span>
+              </TabsTrigger>
+              <TabsTrigger value="progress" className="flex items-center">
+                <Camera className="h-4 w-4 mr-2" />
+                <span>Progresso</span>
+              </TabsTrigger>
+              <TabsTrigger value="workout" className="flex items-center">
+                <Dumbbell className="h-4 w-4 mr-2" />
+                <span>Treinos</span>
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="check-in" className="m-0">
+              <motion.section 
+                className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8"
+                initial="hidden"
+                animate="visible"
+                variants={fadeInUpVariants}
+              >
+                <motion.div 
+                  variants={fadeInUpVariants}
+                  transition={{ delay: 0.3 }}
+                >
+                  <UserList refreshTrigger={refreshTrigger} />
+                </motion.div>
+                <motion.div 
+                  variants={fadeInUpVariants}
+                  transition={{ delay: 0.4 }}
+                >
+                  <WeeklyRanking />
+                </motion.div>
+              </motion.section>
+            </TabsContent>
+            
+            <TabsContent value="progress" className="m-0">
+              <motion.section 
+                initial="hidden"
+                animate="visible"
+                variants={fadeInUpVariants}
+              >
+                <ProgressTracking userId={user.id} />
+              </motion.section>
+            </TabsContent>
+            
+            <TabsContent value="workout" className="m-0">
+              <motion.section 
+                initial="hidden"
+                animate="visible"
+                variants={fadeInUpVariants}
+              >
+                <WorkoutForm />
+              </motion.section>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
       
