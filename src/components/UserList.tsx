@@ -9,13 +9,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 interface User {
   id: string;
-  created_at: string;
+  timestamp: string;
   user_id: string;
-  profiles: {
+  app_users: {
     id: string;
-    username: string;
-    full_name: string | null;
-    avatar_url: string | null;
+    name: string;
+    email: string;
+    photo_url: string | null;
   } | null;
 }
 
@@ -107,20 +107,20 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
                   <div className="flex items-center space-x-3">
                     <Avatar className="h-10 w-10 border border-border">
                       <AvatarImage 
-                        src={user.profiles?.avatar_url || ''} 
-                        alt={user.profiles?.username || 'User'} 
+                        src={user.app_users?.photo_url || ''} 
+                        alt={user.app_users?.name || 'User'} 
                       />
                       <AvatarFallback>
-                        {getInitials(user.profiles?.username || user.profiles?.full_name)}
+                        {getInitials(user.app_users?.name)}
                       </AvatarFallback>
                     </Avatar>
                     
                     <div>
                       <div className="font-medium leading-none">
-                        {user.profiles?.username || 'Anonymous User'}
+                        {user.app_users?.name || 'Anonymous User'}
                       </div>
                       <div className="text-sm text-muted-foreground mt-1">
-                        {getTimeAgo(user.created_at)}
+                        {getTimeAgo(user.timestamp)}
                       </div>
                     </div>
                   </div>

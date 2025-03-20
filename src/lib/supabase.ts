@@ -1,29 +1,45 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// These would typically come from environment variables,
-// but for this demo we'll use public keys directly
-const supabaseUrl = 'https://wdnxhijcmrsnlvzcaxrd.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkbnhoaWpjbXJzbmx2emNheHJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTA3OTc4MzksImV4cCI6MjAyNjM3MzgzOX0.c_t59-7dKcK0k-ZmWOuzaLT0Wq0f3SkA9rXc4kRuiS4';
+// These would typically come from environment variables
+const supabaseUrl = 'https://kngnuoydsbtvoayzotbq.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuZ251b3lkc2J0dm9heXpvdGJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1MDA4NjAsImV4cCI6MjA1ODA3Njg2MH0.J7J9wO-jFtmz8vobnSRueELCK8fOJm9_LEzZHbKSHLA';
 
-// Create Supabase client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create Supabase client with explicit configuration to ensure correct behavior
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: localStorage
+  }
+});
 
 // Authentication helper functions
 export const signUp = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-  });
-  return { data, error };
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    return { data, error };
+  } catch (err) {
+    console.error('Error during signup:', err);
+    return { data: null, error: err };
+  }
 };
 
 export const signIn = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  return { data, error };
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { data, error };
+  } catch (err) {
+    console.error('Error during signin:', err);
+    return { data: null, error: err };
+  }
 };
 
 export const signOut = async () => {
@@ -32,111 +48,135 @@ export const signOut = async () => {
 };
 
 export const getCurrentUser = async () => {
-  const { data, error } = await supabase.auth.getUser();
-  return { user: data?.user, error };
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    return { user: data?.user, error };
+  } catch (err) {
+    console.error('Error getting current user:', err);
+    return { user: null, error: err };
+  }
 };
 
 // Check-in functions
 export const checkIn = async (userId: string) => {
   const today = new Date().toISOString().split('T')[0];
   
-  // Check if user already checked in today
-  const { data: existing } = await supabase
-    .from('checkins')
-    .select('*')
-    .eq('user_id', userId)
-    .gte('created_at', today)
-    .lt('created_at', new Date(new Date().setDate(new Date().getDate() + 1)).toISOString())
-    .single();
-  
-  if (existing) {
-    return { data: existing, error: null, alreadyCheckedIn: true };
+  try {
+    // Check if user already checked in today
+    const { data: existing } = await supabase
+      .from('check_ins')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('check_in_date', today)
+      .single();
+    
+    if (existing) {
+      return { data: existing, error: null, alreadyCheckedIn: true };
+    }
+    
+    // Create new check-in
+    const { data, error } = await supabase
+      .from('check_ins')
+      .insert([{ user_id: userId }])
+      .select()
+      .single();
+    
+    return { data, error, alreadyCheckedIn: false };
+  } catch (err) {
+    console.error('Error during check-in:', err);
+    return { data: null, error: err, alreadyCheckedIn: false };
   }
-  
-  // Create new check-in
-  const { data, error } = await supabase
-    .from('checkins')
-    .insert([{ user_id: userId }])
-    .select()
-    .single();
-  
-  return { data, error, alreadyCheckedIn: false };
 };
 
 export const getTodayCheckins = async () => {
   const today = new Date().toISOString().split('T')[0];
   
-  const { data, error } = await supabase
-    .from('checkins')
-    .select(`
-      id,
-      created_at,
-      user_id,
-      profiles:user_id (
+  try {
+    const { data, error } = await supabase
+      .from('check_ins')
+      .select(`
         id,
-        username,
-        full_name,
-        avatar_url
-      )
-    `)
-    .gte('created_at', today)
-    .lt('created_at', new Date(new Date().setDate(new Date().getDate() + 1)).toISOString())
-    .order('created_at', { ascending: false });
-  
-  return { data, error };
+        timestamp,
+        user_id,
+        app_users:user_id (
+          id,
+          name,
+          email,
+          photo_url
+        )
+      `)
+      .eq('check_in_date', today)
+      .order('timestamp', { ascending: false });
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Error fetching today check-ins:', err);
+    return { data: null, error: err };
+  }
 };
 
 export const getWeeklyRanking = async () => {
   const startOfWeek = new Date();
   startOfWeek.setDate(startOfWeek.getDate() - 7);
+  const formattedStartDate = startOfWeek.toISOString().split('T')[0];
   
-  const { data, error } = await supabase
-    .from('checkins')
-    .select(`
-      user_id,
-      profiles:user_id (
-        id,
-        username,
-        full_name,
-        avatar_url
-      )
-    `)
-    .gte('created_at', startOfWeek.toISOString())
-    .order('created_at', { ascending: false });
-  
-  if (data) {
-    // Count check-ins by user
-    const userCheckIns = data.reduce((acc, curr) => {
-      const userId = curr.user_id;
-      acc[userId] = (acc[userId] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+  try {
+    const { data, error } = await supabase
+      .from('check_ins')
+      .select(`
+        user_id,
+        app_users:user_id (
+          id,
+          name,
+          email,
+          photo_url
+        )
+      `)
+      .gte('check_in_date', formattedStartDate)
+      .order('timestamp', { ascending: false });
     
-    // Create ranking array
-    const ranking = Object.entries(userCheckIns)
-      .map(([userId, count]) => {
-        const userProfile = data.find(item => item.user_id === userId)?.profiles;
-        return {
-          userId,
-          count,
-          profile: userProfile
-        };
-      })
-      .sort((a, b) => b.count - a.count);
+    if (data) {
+      // Count check-ins by user
+      const userCheckIns = data.reduce((acc, curr) => {
+        const userId = curr.user_id;
+        acc[userId] = (acc[userId] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
       
-    return { data: ranking, error: null };
+      // Create ranking array
+      const ranking = Object.entries(userCheckIns)
+        .map(([userId, count]) => {
+          const userProfile = data.find(item => item.user_id === userId)?.app_users;
+          return {
+            userId,
+            count,
+            profile: userProfile
+          };
+        })
+        .sort((a, b) => b.count - a.count);
+        
+      return { data: ranking, error: null };
+    }
+    
+    return { data: null, error };
+  } catch (err) {
+    console.error('Error fetching weekly ranking:', err);
+    return { data: null, error: err };
   }
-  
-  return { data: null, error };
 };
 
 export const updateProfile = async (userId: string, updates: any) => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .update(updates)
-    .eq('id', userId)
-    .select()
-    .single();
-  
-  return { data, error };
+  try {
+    const { data, error } = await supabase
+      .from('app_users')
+      .update(updates)
+      .eq('id', userId)
+      .select()
+      .single();
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Error updating profile:', err);
+    return { data: null, error: err };
+  }
 };

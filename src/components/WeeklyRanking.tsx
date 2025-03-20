@@ -12,9 +12,9 @@ interface RankingUser {
   count: number;
   profile: {
     id: string;
-    username: string;
-    full_name: string | null;
-    avatar_url: string | null;
+    name: string;
+    email: string;
+    photo_url: string | null;
   } | null;
 }
 
@@ -107,16 +107,16 @@ export function WeeklyRanking() {
                     
                     <Avatar className="h-9 w-9 border border-border">
                       <AvatarImage 
-                        src={user.profile?.avatar_url || ''} 
-                        alt={user.profile?.username || 'User'} 
+                        src={user.profile?.photo_url || ''} 
+                        alt={user.profile?.name || 'User'} 
                       />
                       <AvatarFallback>
-                        {getInitials(user.profile?.username || user.profile?.full_name)}
+                        {getInitials(user.profile?.name)}
                       </AvatarFallback>
                     </Avatar>
                     
                     <div className="font-medium">
-                      {user.profile?.username || 'Anonymous User'}
+                      {user.profile?.name || 'Anonymous User'}
                     </div>
                   </div>
                   
