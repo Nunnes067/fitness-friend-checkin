@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -13,7 +12,9 @@ import { WeeklyRanking } from '@/components/WeeklyRanking';
 import { ProgressTracking } from '@/components/ProgressTracking';
 import { WorkoutForm } from '@/components/WorkoutForm';
 import { AnimatedLogo } from '@/components/ui/AnimatedLogo';
-import { LogOut, User, Calendar, Settings, Share2, Camera, Dumbbell } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { AchievementBadges } from '@/components/AchievementBadges';
+import { LogOut, User, Calendar, Settings, Share2, Camera, Dumbbell, Award } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion } from 'framer-motion';
 
@@ -23,6 +24,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  
   const [activeTab, setActiveTab] = useState('check-in');
   const isMobile = useIsMobile();
   
@@ -110,7 +112,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/30">
+    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/30 transition-colors duration-300">
       <header className="glass border-b border-border/40 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto py-4 px-4 sm:px-6 flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -119,6 +121,8 @@ const Dashboard = () => {
           </div>
           
           <div className="flex items-center space-x-2 md:space-x-4">
+            <ThemeToggle />
+            
             <Button
               variant="ghost"
               size="sm"
@@ -182,7 +186,7 @@ const Dashboard = () => {
                 </p>
                 
                 <CheckInButton 
-                  userId={user.id} 
+                  userId={user?.id} 
                   onCheckInSuccess={handleCheckInSuccess}
                   hasCheckedInToday={hasCheckedInToday}
                 />
@@ -215,7 +219,7 @@ const Dashboard = () => {
           </motion.section>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-12">
-            <TabsList className="grid grid-cols-3 mb-6">
+            <TabsList className="grid grid-cols-4 mb-6">
               <TabsTrigger value="check-in" className="flex items-center">
                 <Calendar className="h-4 w-4 mr-2" />
                 <span>Check-ins</span>
@@ -227,6 +231,10 @@ const Dashboard = () => {
               <TabsTrigger value="workout" className="flex items-center">
                 <Dumbbell className="h-4 w-4 mr-2" />
                 <span>Treinos</span>
+              </TabsTrigger>
+              <TabsTrigger value="achievements" className="flex items-center">
+                <Award className="h-4 w-4 mr-2" />
+                <span>Conquistas</span>
               </TabsTrigger>
             </TabsList>
             
@@ -258,7 +266,7 @@ const Dashboard = () => {
                 animate="visible"
                 variants={fadeInUpVariants}
               >
-                <ProgressTracking userId={user.id} />
+                <ProgressTracking userId={user?.id} />
               </motion.section>
             </TabsContent>
             
@@ -269,6 +277,16 @@ const Dashboard = () => {
                 variants={fadeInUpVariants}
               >
                 <WorkoutForm />
+              </motion.section>
+            </TabsContent>
+            
+            <TabsContent value="achievements" className="m-0">
+              <motion.section 
+                initial="hidden"
+                animate="visible"
+                variants={fadeInUpVariants}
+              >
+                <AchievementBadges />
               </motion.section>
             </TabsContent>
           </Tabs>

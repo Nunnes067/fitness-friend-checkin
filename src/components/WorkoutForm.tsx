@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dumbbell, Plus, Trash2, Save } from 'lucide-react';
+import { Dumbbell, Plus, Trash2, Save, ChevronDown, ChevronUp, Folder } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Exercise {
   id: string;
@@ -14,12 +16,27 @@ interface Exercise {
   sets: number;
   reps: number;
   weight: string;
+  category: string;
 }
 
 export function WorkoutForm() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [workoutName, setWorkoutName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  
+  // Predefined categories
+  const categories = [
+    { id: 'peito', name: 'Peito' },
+    { id: 'costas', name: 'Costas' },
+    { id: 'pernas', name: 'Pernas' },
+    { id: 'ombros', name: 'Ombros' },
+    { id: 'biceps', name: 'Bíceps' },
+    { id: 'triceps', name: 'Tríceps' },
+    { id: 'abdomen', name: 'Abdômen' },
+    { id: 'cardio', name: 'Cardio' },
+    { id: 'outro', name: 'Outro' }
+  ];
   
   const addExercise = () => {
     const newExercise: Exercise = {
@@ -28,6 +45,7 @@ export function WorkoutForm() {
       sets: 3,
       reps: 10,
       weight: '',
+      category: 'outro',
     };
     
     setExercises([...exercises, newExercise]);
@@ -41,6 +59,14 @@ export function WorkoutForm() {
   
   const removeExercise = (id: string) => {
     setExercises(exercises.filter(ex => ex.id !== id));
+  };
+  
+  const toggleCategory = (category: string) => {
+    if (expandedCategory === category) {
+      setExpandedCategory(null);
+    } else {
+      setExpandedCategory(category);
+    }
   };
   
   const saveWorkout = async () => {
@@ -80,6 +106,16 @@ export function WorkoutForm() {
       setIsSaving(false);
     }
   };
+
+  // Group exercises by category
+  const exercisesByCategory = exercises.reduce((acc, exercise) => {
+    const category = exercise.category || 'outro';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(exercise);
+    return acc;
+  }, {} as Record<string, Exercise[]>);
   
   return (
     <Card className="glass-card w-full">
@@ -103,70 +139,133 @@ export function WorkoutForm() {
         
         <ScrollArea className="h-[250px] pr-4">
           <AnimatePresence>
-            {exercises.map((exercise, index) => (
-              <motion.div
-                key={exercise.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                className="bg-secondary/30 rounded-lg p-3 mb-3"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="font-medium">Exercício {index + 1}</div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeExercise(exercise.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
+            {Object.keys(exercisesByCategory).length > 0 ? (
+              Object.entries(exercisesByCategory).map(([category, categoryExercises]) => {
+                const categoryInfo = categories.find(c => c.id === category) || { id: category, name: category };
+                const isExpanded = expandedCategory === category;
                 
-                <div className="space-y-2">
-                  <Input
-                    placeholder="Nome do exercício"
-                    value={exercise.name}
-                    onChange={(e) => updateExercise(exercise.id, 'name', e.target.value)}
-                  />
-                  
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <div className="text-xs text-muted-foreground mb-1">Séries</div>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={exercise.sets}
-                        onChange={(e) => updateExercise(exercise.id, 'sets', parseInt(e.target.value) || 1)}
-                      />
+                return (
+                  <motion.div
+                    key={category}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="mb-4"
+                  >
+                    <div 
+                      className="bg-secondary/50 backdrop-blur-sm rounded-t-lg p-3 flex items-center justify-between cursor-pointer"
+                      onClick={() => toggleCategory(category)}
+                    >
+                      <div className="flex items-center">
+                        <Folder className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span className="font-medium">{categoryInfo.name}</span>
+                        <Badge variant="outline" className="ml-2 text-xs">
+                          {categoryExercises.length}
+                        </Badge>
+                      </div>
+                      {isExpanded ? (
+                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      )}
                     </div>
-                    <div>
-                      <div className="text-xs text-muted-foreground mb-1">Repetições</div>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={exercise.reps}
-                        onChange={(e) => updateExercise(exercise.id, 'reps', parseInt(e.target.value) || 1)}
-                      />
-                    </div>
-                    <div>
-                      <div className="text-xs text-muted-foreground mb-1">Peso (kg)</div>
-                      <Input
-                        value={exercise.weight}
-                        onChange={(e) => updateExercise(exercise.id, 'weight', e.target.value)}
-                        placeholder="Peso"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                    
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          {categoryExercises.map((exercise, index) => (
+                            <motion.div
+                              key={exercise.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, x: -10 }}
+                              className="bg-secondary/30 p-3 border-t border-border/10"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="font-medium">Exercício {index + 1}</div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeExercise(exercise.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <Input
+                                  placeholder="Nome do exercício"
+                                  value={exercise.name}
+                                  onChange={(e) => updateExercise(exercise.id, 'name', e.target.value)}
+                                />
+                                
+                                <div className="grid grid-cols-4 gap-2">
+                                  <div className="col-span-1">
+                                    <div className="text-xs text-muted-foreground mb-1">Séries</div>
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      value={exercise.sets}
+                                      onChange={(e) => updateExercise(exercise.id, 'sets', parseInt(e.target.value) || 1)}
+                                    />
+                                  </div>
+                                  <div className="col-span-1">
+                                    <div className="text-xs text-muted-foreground mb-1">Repetições</div>
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      value={exercise.reps}
+                                      onChange={(e) => updateExercise(exercise.id, 'reps', parseInt(e.target.value) || 1)}
+                                    />
+                                  </div>
+                                  <div className="col-span-1">
+                                    <div className="text-xs text-muted-foreground mb-1">Peso (kg)</div>
+                                    <Input
+                                      value={exercise.weight}
+                                      onChange={(e) => updateExercise(exercise.id, 'weight', e.target.value)}
+                                      placeholder="Peso"
+                                    />
+                                  </div>
+                                  <div className="col-span-1">
+                                    <div className="text-xs text-muted-foreground mb-1">Categoria</div>
+                                    <Select
+                                      value={exercise.category}
+                                      onValueChange={(value) => updateExercise(exercise.id, 'category', value)}
+                                    >
+                                      <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Categoria" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {categories.map((cat) => (
+                                          <SelectItem key={cat.id} value={cat.id}>
+                                            {cat.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                Comece adicionando um exercício ao seu treino
+              </div>
+            )}
           </AnimatePresence>
-          
-          {exercises.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              Comece adicionando um exercício ao seu treino
-            </div>
-          )}
         </ScrollArea>
         
         <div className="pt-2">
