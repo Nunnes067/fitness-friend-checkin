@@ -1,15 +1,13 @@
 
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Trophy, CheckCircle, Dumbbell, Camera, X } from 'lucide-react';
+import { Trophy, CheckCircle, Camera, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { checkIn } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
-import { useForm } from 'react-hook-form';
 
 interface CheckInButtonProps {
   userId: string;
@@ -24,7 +22,6 @@ export function CheckInButton({ userId, onCheckInSuccess, hasCheckedInToday }: C
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const form = useForm();
   
   const openPhotoDialog = () => {
     if (hasCheckedInToday) {
@@ -63,7 +60,7 @@ export function CheckInButton({ userId, onCheckInSuccess, hasCheckedInToday }: C
     setIsLoading(true);
     
     try {
-      const { data, error, alreadyCheckedIn } = await checkIn(userId);
+      const { data, error, alreadyCheckedIn } = await checkIn(userId, photoPreview);
       
       if (error) {
         toast.error('Falha no check-in', {

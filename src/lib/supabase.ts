@@ -58,7 +58,7 @@ export const getCurrentUser = async () => {
 };
 
 // Check-in functions
-export const checkIn = async (userId: string) => {
+export const checkIn = async (userId: string, photoData?: string) => {
   const today = new Date().toISOString().split('T')[0];
   
   try {
@@ -74,10 +74,45 @@ export const checkIn = async (userId: string) => {
       return { data: existing, error: null, alreadyCheckedIn: true };
     }
     
-    // Create new check-in
+    // If we have photo data, upload it to storage
+    let photoUrl = null;
+    if (photoData && photoData.startsWith('data:image')) {
+      // Convert base64 to blob
+      const base64Response = await fetch(photoData);
+      const blob = await base64Response.blob();
+      
+      const fileName = `${userId}_${today}_${Date.now()}.jpg`;
+      
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase
+        .storage
+        .from('check-in-photos')
+        .upload(fileName, blob, {
+          contentType: 'image/jpeg',
+          upsert: false
+        });
+      
+      if (uploadError) {
+        console.error('Error uploading photo:', uploadError);
+      } else if (uploadData) {
+        const { data: urlData } = supabase
+          .storage
+          .from('check-in-photos')
+          .getPublicUrl(fileName);
+        
+        photoUrl = urlData.publicUrl;
+      }
+    }
+    
+    // Create new check-in with photo URL if available
+    const checkInData = { 
+      user_id: userId,
+      ...(photoUrl && { photo_url: photoUrl })
+    };
+    
     const { data, error } = await supabase
       .from('check_ins')
-      .insert([{ user_id: userId }])
+      .insert([checkInData])
       .select()
       .single();
     
@@ -97,6 +132,7 @@ export const getTodayCheckins = async () => {
       .select(`
         id,
         timestamp,
+        photo_url,
         user_id,
         app_users:user_id (
           id,

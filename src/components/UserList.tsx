@@ -8,11 +8,12 @@ import { getTodayCheckins } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';  // Added the missing import for cn utility
+import { cn } from '@/lib/utils';
 
 interface User {
   id: string;
   timestamp: string;
+  photo_url?: string;
   user_id: string;
   app_users: {
     id: string;
@@ -141,10 +142,18 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
                 >
                   <div className="flex items-center space-x-3">
                     <Avatar className="h-10 w-10 border border-border">
-                      <AvatarImage 
-                        src={user.app_users?.photo_url || ''} 
-                        alt={user.app_users?.email || 'Usuário'} 
-                      />
+                      {user.photo_url ? (
+                        <AvatarImage 
+                          src={user.photo_url} 
+                          alt="Check-in photo" 
+                          className="object-cover"
+                        />
+                      ) : (
+                        <AvatarImage 
+                          src={user.app_users?.photo_url || ''} 
+                          alt={user.app_users?.name || 'Usuário'} 
+                        />
+                      )}
                       <AvatarFallback>
                         {getInitials(user.app_users?.name)}
                       </AvatarFallback>
@@ -152,7 +161,7 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
                     
                     <div>
                       <div className="font-medium leading-none truncate max-w-[120px] md:max-w-full">
-                        {user.app_users?.email || 'Usuário Anônimo'}
+                        {user.app_users?.name || 'Usuário Anônimo'}
                       </div>
                       <div className="text-sm text-muted-foreground mt-1">
                         {getTimeAgo(user.timestamp)}
