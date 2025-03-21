@@ -43,18 +43,21 @@ export type Database = {
         Row: {
           check_in_date: string
           id: string
+          photo_url: string | null
           timestamp: string
           user_id: string
         }
         Insert: {
           check_in_date?: string
           id?: string
+          photo_url?: string | null
           timestamp?: string
           user_id: string
         }
         Update: {
           check_in_date?: string
           id?: string
+          photo_url?: string | null
           timestamp?: string
           user_id?: string
         }
