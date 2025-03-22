@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 // These would typically come from environment variables
@@ -147,6 +146,48 @@ export const getTodayCheckins = async () => {
     return { data, error };
   } catch (err) {
     console.error('Error fetching today check-ins:', err);
+    return { data: null, error: err };
+  }
+};
+
+export const getDailyHistory = async (date: Date) => {
+  const formattedDate = date.toISOString().split('T')[0];
+  
+  try {
+    // First get all users
+    const { data: allUsers, error: usersError } = await supabase
+      .from('app_users')
+      .select('id, name, email, photo_url')
+      .order('name');
+    
+    if (usersError) {
+      console.error('Error fetching users:', usersError);
+      return { data: null, error: usersError };
+    }
+    
+    // Then get all check-ins for the selected date
+    const { data: checkIns, error: checkInsError } = await supabase
+      .from('check_ins')
+      .select('id, user_id, timestamp, photo_url')
+      .eq('check_in_date', formattedDate);
+    
+    if (checkInsError) {
+      console.error('Error fetching check-ins:', checkInsError);
+      return { data: null, error: checkInsError };
+    }
+    
+    // Combine the data to show who checked in and who didn't
+    const combinedData = allUsers.map((user: any) => {
+      const userCheckIn = checkIns?.find((checkIn: any) => checkIn.user_id === user.id);
+      return {
+        ...user,
+        check_in: userCheckIn || null
+      };
+    });
+    
+    return { data: combinedData, error: null };
+  } catch (err) {
+    console.error('Error fetching daily history:', err);
     return { data: null, error: err };
   }
 };

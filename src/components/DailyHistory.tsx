@@ -1,52 +1,54 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { getTodayCheckins } from '@/lib/supabase';
+import { Calendar, X } from 'lucide-react';
+import { DatePicker } from '@/components/ui/date-picker';
+import { getDailyHistory } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-interface User {
+interface HistoryUser {
   id: string;
-  timestamp: string;
-  photo_url?: string;
-  user_id: string;
-  app_users: {
+  name: string;
+  email: string;
+  photo_url: string | null;
+  check_in?: {
     id: string;
-    name: string;
-    email: string;
+    timestamp: string;
     photo_url: string | null;
   } | null;
 }
 
-export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
-  const [users, setUsers] = useState<User[]>([]);
+export function DailyHistory() {
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [users, setUsers] = useState<HistoryUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const isMobile = useIsMobile();
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
   
   useEffect(() => {
-    const fetchCheckins = async () => {
+    const fetchHistory = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await getTodayCheckins();
+        const { data, error } = await getDailyHistory(selectedDate);
         
         if (error) {
-          console.error('Erro ao buscar check-ins:', error);
+          console.error('Erro ao buscar histórico:', error);
           return;
         }
         
         if (data) {
-          // Type assertion to make TypeScript happy
-          setUsers(data as unknown as User[]);
+          setUsers(data as unknown as HistoryUser[]);
         }
       } catch (err) {
         console.error('Erro inesperado:', err);
@@ -55,20 +57,8 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
       }
     };
     
-    fetchCheckins();
-  }, [refreshTrigger]);
-  
-  const getTimeAgo = (timestamp: string) => {
-    const now = new Date();
-    const checkinTime = new Date(timestamp);
-    const diffInMinutes = Math.floor((now.getTime() - checkinTime.getTime()) / (1000 * 60));
-    
-    if (diffInMinutes < 1) return 'agora mesmo';
-    if (diffInMinutes < 60) return `${diffInMinutes}m atrás`;
-    
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    return `${diffInHours}h atrás`;
-  };
+    fetchHistory();
+  }, [selectedDate]);
   
   const getInitials = (name: string | null) => {
     if (!name) return '?';
@@ -109,16 +99,18 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
     setSelectedUserName(null);
   };
 
+  const formattedDate = format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+
   return (
     <>
       <Card className="glass-card w-full">
         <CardHeader className="pb-3">
-          <CardTitle className="text-xl">Check-ins de Hoje</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl">Histórico Diário</CardTitle>
+            <DatePicker date={selectedDate} onSelect={setSelectedDate} />
+          </div>
           <CardDescription>
-            {users.length > 0 
-              ? `${users.length} membro${users.length === 1 ? '' : 's'} registrou presença hoje`
-              : 'Ninguém fez check-in ainda hoje'
-            }
+            Registro de presença para {formattedDate}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -147,7 +139,7 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
                     className="py-8 text-center text-muted-foreground"
                     variants={itemVariants}
                   >
-                    Seja o primeiro a fazer check-in hoje!
+                    Nenhum membro encontrado para esta data.
                   </motion.div>
                 )}
                 
@@ -162,44 +154,56 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
                       <div 
                         className="relative cursor-pointer" 
                         onClick={() => openPhotoPreview(
-                          user.photo_url || user.app_users?.photo_url || undefined,
-                          user.app_users?.name
+                          user.check_in?.photo_url || user.photo_url || undefined,
+                          user.name
                         )}
                       >
                         <Avatar className="h-10 w-10 border border-border">
-                          {user.photo_url ? (
+                          {user.check_in?.photo_url ? (
                             <AvatarImage 
-                              src={user.photo_url} 
+                              src={user.check_in.photo_url} 
                               alt="Check-in photo" 
                               className="object-cover"
                             />
                           ) : (
                             <AvatarImage 
-                              src={user.app_users?.photo_url || ''} 
-                              alt={user.app_users?.name || 'Usuário'} 
+                              src={user.photo_url || ''} 
+                              alt={user.name || 'Usuário'} 
                             />
                           )}
                           <AvatarFallback>
-                            {getInitials(user.app_users?.name)}
+                            {getInitials(user.name)}
                           </AvatarFallback>
                         </Avatar>
-                        {user.photo_url && (
+                        {user.check_in?.photo_url && (
                           <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-green-500 rounded-full border border-background" />
                         )}
                       </div>
                       
                       <div>
                         <div className="font-medium leading-none truncate max-w-[120px] md:max-w-full">
-                          {user.app_users?.name || 'Usuário Anônimo'}
+                          {user.name || 'Usuário Anônimo'}
                         </div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {getTimeAgo(user.timestamp)}
-                        </div>
+                        {user.check_in ? (
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {format(new Date(user.check_in.timestamp), 'HH:mm')}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-red-400 mt-1">
+                            Não fez check-in
+                          </div>
+                        )}
                       </div>
                     </div>
                     
-                    <Badge variant="secondary" className="text-xs">
-                      Registrado
+                    <Badge 
+                      variant={user.check_in ? "secondary" : "outline"} 
+                      className={cn(
+                        "text-xs",
+                        !user.check_in && "text-red-400 border-red-400"
+                      )}
+                    >
+                      {user.check_in ? "Registrado" : "Ausente"}
                     </Badge>
                   </motion.div>
                 ))}

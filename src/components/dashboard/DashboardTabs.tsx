@@ -1,13 +1,14 @@
 
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Camera, Dumbbell, Award } from 'lucide-react';
+import { Calendar, Camera, Dumbbell, Award, History } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { UserList } from '@/components/UserList';
 import { WeeklyRanking } from '@/components/WeeklyRanking';
 import { ProgressTracking } from '@/components/ProgressTracking';
 import { WorkoutForm } from '@/components/WorkoutForm';
 import { AchievementBadges } from '@/components/AchievementBadges';
+import { DailyHistory } from '@/components/DailyHistory';
 
 interface DashboardTabsProps {
   refreshTrigger: number;
@@ -28,10 +29,14 @@ export function DashboardTabs({ refreshTrigger, userId }: DashboardTabsProps) {
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-12">
-      <TabsList className="grid grid-cols-4 mb-6">
+      <TabsList className="grid grid-cols-5 mb-6">
         <TabsTrigger value="check-in" className="flex items-center">
           <Calendar className="h-4 w-4 mr-2" />
           <span>Check-ins</span>
+        </TabsTrigger>
+        <TabsTrigger value="history" className="flex items-center">
+          <History className="h-4 w-4 mr-2" />
+          <span>Histórico</span>
         </TabsTrigger>
         <TabsTrigger value="progress" className="flex items-center">
           <Camera className="h-4 w-4 mr-2" />
@@ -66,6 +71,16 @@ export function DashboardTabs({ refreshTrigger, userId }: DashboardTabsProps) {
           >
             <WeeklyRanking />
           </motion.div>
+        </motion.section>
+      </TabsContent>
+      
+      <TabsContent value="history" className="m-0">
+        <motion.section 
+          initial="hidden"
+          animate="visible"
+          variants={fadeInUpVariants}
+        >
+          <DailyHistory />
         </motion.section>
       </TabsContent>
       
