@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
 interface HistoryUser {
@@ -182,7 +182,7 @@ export function DailyHistory() {
                       
                       <div>
                         <div className="font-medium leading-none truncate max-w-[120px] md:max-w-full">
-                          {user.name || 'Usuário Anônimo'}
+                          {user.name || 'Usuário'}
                         </div>
                         {user.check_in ? (
                           <div className="text-sm text-muted-foreground mt-1">
@@ -218,6 +218,9 @@ export function DailyHistory() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Foto de check-in de {selectedUserName || 'Usuário'}</DialogTitle>
+            <DialogDescription>
+              Foto registrada durante o check-in
+            </DialogDescription>
             <Button
               variant="outline"
               size="icon"

@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getCurrentUser, updateProfile } from '@/lib/supabase';
 import { AnimatedLogo } from '@/components/ui/AnimatedLogo';
@@ -22,6 +21,7 @@ const Profile = () => {
     fullName: '',
     bio: '',
     avatarUrl: '',
+    name: '',
   });
   
   useEffect(() => {
@@ -36,13 +36,15 @@ const Profile = () => {
         
         setUser(currentUser);
         
-        // In a real app, we would fetch the profile data from the profiles table
-        // For now, let's just use some placeholder data
+        // Fetch user profile from the app_users table
+        const { data: userData } = await updateProfile(currentUser.id, {});
+        
         setProfile({
           username: currentUser.email?.split('@')[0] || '',
-          fullName: '',
+          fullName: userData?.name || '',
+          name: userData?.name || currentUser.email?.split('@')[0] || '',
           bio: '',
-          avatarUrl: '',
+          avatarUrl: userData?.photo_url || '',
         });
       } catch (err) {
         console.error('Auth check error:', err);
@@ -62,18 +64,27 @@ const Profile = () => {
     setIsSaving(true);
     
     try {
-      // In a real app, we would save the profile data to the profiles table
-      // For now, let's just show a success toast
+      if (!user?.id) {
+        throw new Error('User ID not found');
+      }
       
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      // Update profile in Supabase
+      const { error } = await updateProfile(user.id, {
+        name: profile.name,
+        photo_url: profile.avatarUrl,
+      });
       
-      toast.success('Profile updated', {
-        description: 'Your profile has been successfully updated.',
+      if (error) {
+        throw error;
+      }
+      
+      toast.success('Perfil atualizado', {
+        description: 'Suas informações foram atualizadas com sucesso.',
       });
     } catch (err) {
       console.error('Update profile error:', err);
-      toast.error('Update failed', {
-        description: 'Failed to update profile. Please try again.',
+      toast.error('Falha na atualização', {
+        description: 'Não foi possível atualizar o perfil. Tente novamente.',
       });
     } finally {
       setIsSaving(false);
@@ -117,17 +128,17 @@ const Profile = () => {
       <main className="container mx-auto py-8 px-4 sm:px-6 animate-fade-in">
         <div className="max-w-2xl mx-auto">
           <section className="mb-8 text-center">
-            <h1 className="text-3xl font-bold tracking-tight mb-2">Your Profile</h1>
+            <h1 className="text-3xl font-bold tracking-tight mb-2">Seu Perfil</h1>
             <p className="text-muted-foreground">
-              Update your personal information
+              Atualize suas informações pessoais
             </p>
           </section>
           
           <Card className="glass-card border border-border/40">
             <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
+              <CardTitle>Informações do Perfil</CardTitle>
               <CardDescription>
-                How you appear to other members
+                Como você aparece para outros membros
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -135,27 +146,31 @@ const Profile = () => {
                 <Avatar className="h-24 w-24 border border-border">
                   <AvatarImage src={profile.avatarUrl} alt={profile.username} />
                   <AvatarFallback className="text-lg">
-                    {profile.username ? getInitials(profile.username) : <User />}
+                    {profile.name ? getInitials(profile.name) : <User />}
                   </AvatarFallback>
                 </Avatar>
                 
                 <div className="flex-1 space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="username">Username</Label>
+                    <Label htmlFor="name">Nome</Label>
                     <Input
-                      id="username"
-                      value={profile.username}
-                      onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+                      id="name"
+                      value={profile.name}
+                      onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                      placeholder="Seu nome completo"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Este nome aparecerá na lista de check-ins
+                    </p>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="fullName">Full Name</Label>
+                    <Label htmlFor="avatarUrl">URL da Foto</Label>
                     <Input
-                      id="fullName"
-                      value={profile.fullName}
-                      onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
-                      placeholder="Your full name (optional)"
+                      id="avatarUrl"
+                      value={profile.avatarUrl}
+                      onChange={(e) => setProfile({ ...profile, avatarUrl: e.target.value })}
+                      placeholder="https://example.com/foto.jpg"
                     />
                   </div>
                 </div>
@@ -169,7 +184,7 @@ const Profile = () => {
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={profile.bio}
                   onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                  placeholder="A short bio about yourself (optional)"
+                  placeholder="Uma breve descrição sobre você (opcional)"
                 />
               </div>
               
@@ -183,14 +198,14 @@ const Profile = () => {
                   className="bg-muted"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Your email address cannot be changed
+                  Seu endereço de email não pode ser alterado
                 </p>
               </div>
             </CardContent>
             <CardFooter className="flex justify-end">
               <Button onClick={handleSaveProfile} disabled={isSaving}>
                 <Save className="h-4 w-4 mr-2" />
-                {isSaving ? 'Saving...' : 'Save Changes'}
+                {isSaving ? 'Salvando...' : 'Salvar Alterações'}
               </Button>
             </CardFooter>
           </Card>
@@ -199,7 +214,7 @@ const Profile = () => {
       
       <footer className="border-t border-border/40 py-6 text-center text-sm text-muted-foreground mt-auto">
         <div className="container mx-auto">
-          CheckMate - Your daily gym companion
+          CheckMate - Seu companheiro diário da academia
         </div>
       </footer>
     </div>

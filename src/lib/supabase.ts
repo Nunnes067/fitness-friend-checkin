@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 // These would typically come from environment variables
@@ -244,6 +245,23 @@ export const getWeeklyRanking = async () => {
 
 export const updateProfile = async (userId: string, updates: any) => {
   try {
+    // First get current profile to return if no updates provided
+    if (Object.keys(updates).length === 0) {
+      const { data: currentProfile, error: fetchError } = await supabase
+        .from('app_users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (fetchError) {
+        console.error('Error fetching profile:', fetchError);
+        return { data: null, error: fetchError };
+      }
+      
+      return { data: currentProfile, error: null };
+    }
+    
+    // Then update profile if there are updates
     const { data, error } = await supabase
       .from('app_users')
       .update(updates)

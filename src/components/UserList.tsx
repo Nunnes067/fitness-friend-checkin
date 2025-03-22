@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -190,7 +190,7 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
                       
                       <div>
                         <div className="font-medium leading-none truncate max-w-[120px] md:max-w-full">
-                          {user.app_users?.name || 'Usuário Anônimo'}
+                          {user.app_users?.name || 'Usuário'}
                         </div>
                         <div className="text-sm text-muted-foreground mt-1">
                           {getTimeAgo(user.timestamp)}
@@ -214,6 +214,9 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Foto de check-in de {selectedUserName || 'Usuário'}</DialogTitle>
+            <DialogDescription>
+              Foto registrada durante o check-in
+            </DialogDescription>
             <Button
               variant="outline"
               size="icon"
