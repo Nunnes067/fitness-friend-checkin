@@ -17,6 +17,7 @@ export type Database = {
           last_check_in: string | null
           name: string
           photo_url: string | null
+          role: string | null
           streak: number
         }
         Insert: {
@@ -26,6 +27,7 @@ export type Database = {
           last_check_in?: string | null
           name: string
           photo_url?: string | null
+          role?: string | null
           streak?: number
         }
         Update: {
@@ -35,6 +37,7 @@ export type Database = {
           last_check_in?: string | null
           name?: string
           photo_url?: string | null
+          role?: string | null
           streak?: number
         }
         Relationships: []
@@ -76,7 +79,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: {
+          user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

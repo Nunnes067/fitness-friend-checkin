@@ -10,8 +10,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { X } from 'lucide-react';
+import { Trash, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { isAdmin, removeCheckIn } from '@/lib/admin';
+import { toast } from 'sonner';
 
 interface User {
   id: string;
@@ -32,6 +34,8 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
   const isMobile = useIsMobile();
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
+  const [isAdminUser, setIsAdminUser] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
   useEffect(() => {
     const fetchCheckins = async () => {
@@ -47,6 +51,14 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
         if (data) {
           // Type assertion to make TypeScript happy
           setUsers(data as unknown as User[]);
+          
+          // Check if current user is admin
+          if (data.length > 0 && data[0].app_users) {
+            const userId = data[0].app_users.id;
+            setCurrentUserId(userId);
+            const adminStatus = await isAdmin(userId);
+            setIsAdminUser(adminStatus);
+          }
         }
       } catch (err) {
         console.error('Erro inesperado:', err);
@@ -107,6 +119,31 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
   const closePhotoPreview = () => {
     setSelectedPhotoUrl(null);
     setSelectedUserName(null);
+  };
+
+  const handleDeleteCheckIn = async (checkInId: string, userName: string | null) => {
+    try {
+      const { error } = await removeCheckIn(checkInId);
+      
+      if (error) {
+        toast.error('Erro ao remover check-in', {
+          description: error.message
+        });
+        return;
+      }
+      
+      toast.success('Check-in removido', {
+        description: `O check-in de ${userName || 'usuário'} foi removido com sucesso.`
+      });
+      
+      // Update users list
+      setUsers(users.filter(user => user.id !== checkInId));
+    } catch (err) {
+      console.error('Erro ao remover check-in:', err);
+      toast.error('Erro inesperado', {
+        description: 'Não foi possível remover o check-in'
+      });
+    }
   };
 
   return (
@@ -198,9 +235,23 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
                       </div>
                     </div>
                     
-                    <Badge variant="secondary" className="text-xs">
-                      Registrado
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        Registrado
+                      </Badge>
+                      
+                      {isAdminUser && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDeleteCheckIn(user.id, user.app_users?.name)}
+                          title="Remover check-in"
+                        >
+                          <Trash className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
                   </motion.div>
                 ))}
               </motion.div>

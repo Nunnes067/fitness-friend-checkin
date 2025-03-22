@@ -8,6 +8,7 @@ import { WelcomeHeader } from '@/components/dashboard/WelcomeHeader';
 import { CheckInCard } from '@/components/dashboard/CheckInCard';
 import { DashboardTabs } from '@/components/dashboard/DashboardTabs';
 import { LoadingScreen } from '@/components/dashboard/LoadingScreen';
+import { AdminControls } from '@/components/dashboard/AdminControls';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -54,6 +55,12 @@ const Dashboard = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
+  const handleAdminActionComplete = () => {
+    // Reset check-in status and refresh data
+    setHasCheckedInToday(false);
+    setRefreshTrigger(prev => prev + 1);
+  };
+
   if (isLoading) {
     return <LoadingScreen />;
   }
@@ -61,6 +68,13 @@ const Dashboard = () => {
   return (
     <DashboardLayout user={user}>
       <WelcomeHeader />
+      
+      {/* Add Admin Controls */}
+      <AdminControls 
+        userId={user?.id} 
+        onActionComplete={handleAdminActionComplete} 
+      />
+      
       <CheckInCard 
         userId={user?.id} 
         hasCheckedInToday={hasCheckedInToday}
