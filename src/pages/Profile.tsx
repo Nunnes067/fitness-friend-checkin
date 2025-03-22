@@ -9,13 +9,32 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getCurrentUser, updateProfile } from '@/lib/supabase';
 import { AnimatedLogo } from '@/components/ui/AnimatedLogo';
-import { ChevronLeft, Save, User } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { ChevronLeft, Save, User, Lock } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { supabase } from '@/lib/supabase';
+
+const passwordSchema = z.object({
+  password: z.string().min(6, {
+    message: "Password must be at least 6 characters.",
+  }),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
 
 const Profile = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [profile, setProfile] = useState({
     username: '',
     fullName: '',
@@ -24,6 +43,14 @@ const Profile = () => {
     name: '',
   });
   
+  const passwordForm = useForm<z.infer<typeof passwordSchema>>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: {
+      password: '',
+      confirmPassword: '',
+    },
+  });
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -90,6 +117,33 @@ const Profile = () => {
       setIsSaving(false);
     }
   };
+
+  const handlePasswordChange = async (data: z.infer<typeof passwordSchema>) => {
+    setIsChangingPassword(true);
+    
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: data.password
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success('Senha atualizada', {
+        description: 'Sua senha foi atualizada com sucesso.',
+      });
+      
+      passwordForm.reset();
+    } catch (err: any) {
+      console.error('Password change error:', err);
+      toast.error('Falha na atualização da senha', {
+        description: err.message || 'Não foi possível atualizar a senha. Tente novamente.',
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
   
   const getInitials = (name: string) => {
     const parts = name.split(' ');
@@ -134,7 +188,7 @@ const Profile = () => {
             </p>
           </section>
           
-          <Card className="glass-card border border-border/40">
+          <Card className="glass-card border border-border/40 mb-6">
             <CardHeader>
               <CardTitle>Informações do Perfil</CardTitle>
               <CardDescription>
@@ -178,10 +232,9 @@ const Profile = () => {
               
               <div className="space-y-2">
                 <Label htmlFor="bio">Bio</Label>
-                <textarea
+                <Textarea
                   id="bio"
                   rows={3}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={profile.bio}
                   onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
                   placeholder="Uma breve descrição sobre você (opcional)"
@@ -208,6 +261,73 @@ const Profile = () => {
                 {isSaving ? 'Salvando...' : 'Salvar Alterações'}
               </Button>
             </CardFooter>
+          </Card>
+          
+          <Card className="glass-card border border-border/40">
+            <CardHeader>
+              <CardTitle>Segurança da Conta</CardTitle>
+              <CardDescription>
+                Atualize sua senha e configurações de segurança
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...passwordForm}>
+                <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)} className="space-y-4">
+                  <FormField
+                    control={passwordForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nova Senha</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="••••••••"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={passwordForm.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirmar Nova Senha</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="••••••••"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Alert>
+                    <Lock className="h-4 w-4" />
+                    <AlertDescription>
+                      Sua senha deve ter pelo menos 6 caracteres. Use uma combinação de letras, números e símbolos para maior segurança.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="pt-2">
+                    <Button 
+                      type="submit" 
+                      disabled={isChangingPassword}
+                      className="w-full"
+                    >
+                      {isChangingPassword ? 'Atualizando senha...' : 'Atualizar Senha'}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </CardContent>
           </Card>
         </div>
       </main>
