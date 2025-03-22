@@ -47,6 +47,18 @@ export const signOut = async () => {
   return { error };
 };
 
+export const resetPassword = async (email: string, redirectTo: string) => {
+  try {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    });
+    return { data, error };
+  } catch (err) {
+    console.error('Error during password reset:', err);
+    return { data: null, error: err };
+  }
+};
+
 export const getCurrentUser = async () => {
   try {
     const { data, error } = await supabase.auth.getUser();

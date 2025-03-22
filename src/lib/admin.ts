@@ -70,3 +70,35 @@ export const removeAllTodayCheckIns = async () => {
     return { data: null, error: err };
   }
 };
+
+// Function to get all users
+export const getAllUsers = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('app_users')
+      .select('id, name, email, role, created_at')
+      .order('name');
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Error fetching users:', err);
+    return { data: null, error: err };
+  }
+};
+
+// Function to set a user's admin status
+export const setUserAdminStatus = async (userId: string, isAdmin: boolean) => {
+  try {
+    const { data, error } = await supabase
+      .from('app_users')
+      .update({ role: isAdmin ? 'admin' : 'user' })
+      .eq('id', userId)
+      .select()
+      .single();
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Error updating user admin status:', err);
+    return { data: null, error: err };
+  }
+};

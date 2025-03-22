@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { signIn, signUp } from '@/lib/supabase';
+import { signIn, signUp, resetPassword } from '@/lib/supabase';
 
 export function AuthForm() {
   const navigate = useNavigate();
@@ -16,6 +16,8 @@ export function AuthForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
+  const [showResetForm, setShowResetForm] = useState(false);
   
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,6 +81,77 @@ export function AuthForm() {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    try {
+      // Get the current URL to use as redirect
+      const redirectTo = window.location.origin + '/dashboard';
+      
+      const { error } = await resetPassword(resetEmail, redirectTo);
+      
+      if (error) {
+        toast.error('Password reset failed', {
+          description: error.message,
+        });
+        return;
+      }
+      
+      toast.success('Password reset email sent', {
+        description: 'Check your email for a password reset link',
+      });
+      setShowResetForm(false);
+    } catch (err) {
+      toast.error('An unexpected error occurred');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (showResetForm) {
+    return (
+      <div className="w-full max-w-md mx-auto space-y-6 animate-fade-in">
+        <div className="flex flex-col items-center justify-center space-y-2 text-center">
+          <AnimatedLogo size="lg" />
+          <h1 className="text-3xl font-bold tracking-tight">CheckMate</h1>
+          <p className="text-muted-foreground">Reset your password</p>
+        </div>
+        
+        <div className="glass-card p-6 rounded-xl">
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="reset-email">Email</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                placeholder="you@example.com"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+            </div>
+            
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Sending reset link...' : 'Send Reset Link'}
+            </Button>
+            
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full"
+              onClick={() => setShowResetForm(false)}
+            >
+              Back to Login
+            </Button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-md mx-auto space-y-6 animate-fade-in">
       <div className="flex flex-col items-center justify-center space-y-2 text-center">
@@ -112,18 +185,16 @@ export function AuthForm() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <a 
-                    href="#" 
+                  <button 
+                    type="button"
                     className="text-xs text-muted-foreground hover:text-primary transition-colors"
                     onClick={(e) => {
                       e.preventDefault();
-                      toast.info('Password reset', {
-                        description: 'This feature is coming soon!',
-                      });
+                      setShowResetForm(true);
                     }}
                   >
                     Forgot password?
-                  </a>
+                  </button>
                 </div>
                 <Input
                   id="password"
