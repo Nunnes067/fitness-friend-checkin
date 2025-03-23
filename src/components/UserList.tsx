@@ -10,7 +10,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Trash, X } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { isAdmin, removeCheckIn } from '@/lib/admin';
 import { toast } from 'sonner';
@@ -126,6 +126,7 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
       const { error } = await removeCheckIn(checkInId);
       
       if (error) {
+        console.error('Error deleting check-in:', error);
         toast.error('Erro ao remover check-in', {
           description: error.message
         });
@@ -136,7 +137,7 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
         description: `O check-in de ${userName || 'usuário'} foi removido com sucesso.`
       });
       
-      // Update users list
+      // Update users list by filtering out the deleted check-in
       setUsers(users.filter(user => user.id !== checkInId));
     } catch (err) {
       console.error('Erro ao remover check-in:', err);
@@ -248,7 +249,7 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
                           onClick={() => handleDeleteCheckIn(user.id, user.app_users?.name)}
                           title="Remover check-in"
                         >
-                          <Trash className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       )}
                     </div>

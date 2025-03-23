@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase';
 
 // Function to check if the current user is an admin
@@ -6,14 +5,18 @@ export const isAdmin = async (userId: string) => {
   try {
     if (!userId) return false;
     
-    const { data, error } = await supabase.rpc('is_admin', { user_id: userId });
+    const { data, error } = await supabase
+      .from('app_users')
+      .select('role')
+      .eq('id', userId)
+      .maybeSingle();
     
     if (error) {
       console.error('Error checking admin status:', error);
       return false;
     }
     
-    return data === true;
+    return data?.role === 'admin';
   } catch (err) {
     console.error('Unexpected error checking admin status:', err);
     return false;
@@ -23,17 +26,15 @@ export const isAdmin = async (userId: string) => {
 // Function to remove a check-in by ID
 export const removeCheckIn = async (checkInId: string) => {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('check_ins')
       .delete()
-      .eq('id', checkInId)
-      .select()
-      .single();
+      .eq('id', checkInId);
     
-    return { data, error };
+    return { error };
   } catch (err) {
     console.error('Error removing check-in:', err);
-    return { data: null, error: err };
+    return { error: err };
   }
 };
 
