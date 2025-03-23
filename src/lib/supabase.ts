@@ -395,6 +395,11 @@ export const joinParty = async (userId: string, partyCode: string) => {
     
     // Check if party is expired
     if (new Date(party.expires_at) < new Date()) {
+      await supabase
+        .from('parties')
+        .update({ is_active: false })
+        .eq('id', party.id);
+        
       return { data: null, error: { message: 'Party expirada' }, message: 'Esta party já expirou' };
     }
     
@@ -456,23 +461,46 @@ export const joinParty = async (userId: string, partyCode: string) => {
 
 export const getPartyMembers = async (partyId: string) => {
   try {
-    const { data, error } = await supabase
+    console.log('Fetching party members with correct query');
+    
+    // Correção: Não usar join com app_users, buscar separadamente
+    const { data: members, error } = await supabase
       .from('party_members')
-      .select(`
-        id,
-        user_id,
-        joined_at,
-        app_users (
-          id, 
-          name, 
-          email, 
-          photo_url
-        )
-      `)
+      .select('id, user_id, joined_at')
       .eq('party_id', partyId)
       .order('joined_at');
     
-    return { data, error };
+    if (error) {
+      console.error('Error fetching party members:', error);
+      return { data: null, error };
+    }
+    
+    if (!members || members.length === 0) {
+      return { data: [], error: null };
+    }
+    
+    // Buscar detalhes de usuários separadamente
+    const userIds = members.map(member => member.user_id);
+    const { data: users, error: usersError } = await supabase
+      .from('app_users')
+      .select('id, name, email, photo_url')
+      .in('id', userIds);
+    
+    if (usersError) {
+      console.error('Error fetching users:', usersError);
+      return { data: null, error: usersError };
+    }
+    
+    // Combinar dados
+    const enrichedMembers = members.map(member => {
+      const userDetails = users?.find(user => user.id === member.user_id) || null;
+      return {
+        ...member,
+        app_users: userDetails
+      };
+    });
+    
+    return { data: enrichedMembers, error: null };
   } catch (err) {
     console.error('Unexpected error fetching party members:', err);
     return { data: null, error: err };
