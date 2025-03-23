@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -48,15 +49,18 @@ export function PartyCard({ userId, hasCheckedInToday, onCheckInSuccess }: Party
   useEffect(() => {
     if (!currentParty) return;
     
+    console.log("Setting up realtime subscription for party:", currentParty.id);
+    
     // Set up realtime subscription
     const channel = supabase
-      .channel('party-changes')
+      .channel(`party-changes-${currentParty.id}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'party_members',
         filter: `party_id=eq.${currentParty.id}`
       }, (payload) => {
+        console.log("Realtime update received for party members:", payload);
         // Refresh members list
         fetchPartyMembers();
       })
@@ -66,6 +70,7 @@ export function PartyCard({ userId, hasCheckedInToday, onCheckInSuccess }: Party
     fetchPartyMembers();
     
     return () => {
+      console.log("Cleaning up realtime subscription");
       supabase.removeChannel(channel);
     };
   }, [currentParty]);
@@ -74,14 +79,17 @@ export function PartyCard({ userId, hasCheckedInToday, onCheckInSuccess }: Party
   useEffect(() => {
     if (!currentParty) return;
     
+    console.log("Setting up realtime subscription for party status:", currentParty.id);
+    
     const channel = supabase
-      .channel('party-status-changes')
+      .channel(`party-status-changes-${currentParty.id}`)
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
         table: 'parties',
         filter: `id=eq.${currentParty.id}`
       }, (payload: any) => {
+        console.log("Realtime update received for party status:", payload);
         // Update current party if status changed
         if (payload.new && (
           payload.new.is_active !== currentParty.is_active ||
@@ -93,35 +101,47 @@ export function PartyCard({ userId, hasCheckedInToday, onCheckInSuccess }: Party
       .subscribe();
     
     return () => {
+      console.log("Cleaning up party status subscription");
       supabase.removeChannel(channel);
     };
   }, [currentParty]);
   
   const fetchCurrentParty = async () => {
-    const { data, error } = await getCurrentParty(userId);
-    if (error) {
-      console.error('Error fetching current party:', error);
-      return;
-    }
-    
-    setCurrentParty(data);
-    if (data) {
-      setIsCreator(data.creator_id === userId);
-    } else {
-      setIsCreator(false);
+    try {
+      const { data, error } = await getCurrentParty(userId);
+      if (error) {
+        console.error('Error fetching current party:', error);
+        return;
+      }
+      
+      console.log("Current party data:", data);
+      setCurrentParty(data);
+      if (data) {
+        setIsCreator(data.creator_id === userId);
+      } else {
+        setIsCreator(false);
+      }
+    } catch (err) {
+      console.error("Unexpected error in fetchCurrentParty:", err);
     }
   };
   
   const fetchPartyMembers = async () => {
     if (!currentParty) return;
     
-    const { data, error } = await getPartyMembers(currentParty.id);
-    if (error) {
-      console.error('Error fetching party members:', error);
-      return;
+    try {
+      console.log("Fetching party members for party:", currentParty.id);
+      const { data, error } = await getPartyMembers(currentParty.id);
+      if (error) {
+        console.error('Error fetching party members:', error);
+        return;
+      }
+      
+      console.log("Party members data:", data);
+      setPartyMembers(data || []);
+    } catch (err) {
+      console.error("Unexpected error in fetchPartyMembers:", err);
     }
-    
-    setPartyMembers(data || []);
   };
   
   const handleCreateParty = async () => {
@@ -140,12 +160,14 @@ export function PartyCard({ userId, hasCheckedInToday, onCheckInSuccess }: Party
         return;
       }
       
+      console.log("Party created:", data);
       setCurrentParty(data);
       setIsCreator(true);
       toast.success('Grupo criado com sucesso!', {
         description: 'Compartilhe o código com seus amigos.'
       });
     } catch (err) {
+      console.error("Error creating party:", err);
       toast.error('Ocorreu um erro inesperado');
     } finally {
       setLoading(false);
@@ -165,6 +187,7 @@ export function PartyCard({ userId, hasCheckedInToday, onCheckInSuccess }: Party
     
     setLoading(true);
     try {
+      console.log("Joining party with code:", partyCode);
       const { data, error, message } = await joinParty(userId, partyCode);
       
       if (error) {
@@ -174,11 +197,13 @@ export function PartyCard({ userId, hasCheckedInToday, onCheckInSuccess }: Party
         return;
       }
       
+      console.log("Joined party:", data);
       setCurrentParty(data);
       setIsCreator(data?.creator_id === userId);
       toast.success(message || 'Você entrou no grupo!');
       setPartyCode('');
     } catch (err) {
+      console.error("Error joining party:", err);
       toast.error('Ocorreu um erro inesperado');
     } finally {
       setLoading(false);
@@ -190,16 +215,18 @@ export function PartyCard({ userId, hasCheckedInToday, onCheckInSuccess }: Party
     
     setLoading(true);
     try {
-      const { error } = await leaveParty(userId, currentParty.id);
-      if (error) {
-        toast.error('Erro ao sair do grupo', {
-          description: error.message,
-        });
-        return;
-      }
+      console.log("Leaving/canceling party:", currentParty.id, "isCreator:", isCreator);
       
       // If the user is not the creator, just leave
       if (!isCreator) {
+        const { error } = await leaveParty(userId, currentParty.id);
+        if (error) {
+          toast.error('Erro ao sair do grupo', {
+            description: error.message,
+          });
+          return;
+        }
+        
         setCurrentParty(null);
         setPartyMembers([]);
         toast.success('Você saiu do grupo');
@@ -218,6 +245,7 @@ export function PartyCard({ userId, hasCheckedInToday, onCheckInSuccess }: Party
         toast.success(message || 'Grupo cancelado com sucesso');
       }
     } catch (err) {
+      console.error("Error leaving/canceling party:", err);
       toast.error('Ocorreu um erro inesperado');
     } finally {
       setLoading(false);
@@ -254,6 +282,7 @@ export function PartyCard({ userId, hasCheckedInToday, onCheckInSuccess }: Party
     
     setLoading(true);
     try {
+      console.log("Performing party check-in for party:", currentParty.id);
       const { error, message } = await partyCheckIn(currentParty.id, userId);
       if (error) {
         toast.error('Erro ao fazer check-in do grupo', {
@@ -269,6 +298,7 @@ export function PartyCard({ userId, hasCheckedInToday, onCheckInSuccess }: Party
       // Trigger parent component refresh
       onCheckInSuccess();
     } catch (err) {
+      console.error("Error during party check-in:", err);
       toast.error('Ocorreu um erro inesperado');
     } finally {
       setLoading(false);
@@ -364,39 +394,39 @@ export function PartyCard({ userId, hasCheckedInToday, onCheckInSuccess }: Party
               
               <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
                 <AnimatePresence>
-                  {partyMembers.map((member, index) => (
-                    <motion.div
-                      key={member.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                      className="flex items-center p-2 rounded-md bg-background/40 border border-border/40"
-                    >
-                      <Avatar className="h-8 w-8 mr-2">
-                        <AvatarImage src={member.app_users.photo_url} alt={member.app_users.name} />
-                        <AvatarFallback>
-                          {member.app_users.name.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{member.app_users.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(member.joined_at), "'Entrou às' HH:mm", { locale: ptBR })}
-                        </p>
-                      </div>
-                      {member.user_id === currentParty.creator_id && (
-                        <Badge variant="secondary" className="ml-auto text-xs">Criador</Badge>
-                      )}
-                    </motion.div>
-                  ))}
+                  {partyMembers.length > 0 ? (
+                    partyMembers.map((member, index) => (
+                      <motion.div
+                        key={member.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                        className="flex items-center p-2 rounded-md bg-background/40 border border-border/40"
+                      >
+                        <Avatar className="h-8 w-8 mr-2">
+                          <AvatarImage src={member.app_users?.photo_url} alt={member.app_users?.name} />
+                          <AvatarFallback>
+                            {member.app_users?.name?.substring(0, 2).toUpperCase() || "??"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{member.app_users?.name || "Usuário"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(member.joined_at), "'Entrou às' HH:mm", { locale: ptBR })}
+                          </p>
+                        </div>
+                        {member.user_id === currentParty.creator_id && (
+                          <Badge variant="secondary" className="ml-auto text-xs">Criador</Badge>
+                        )}
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground text-sm">
+                      Carregando participantes...
+                    </div>
+                  )}
                 </AnimatePresence>
-                
-                {partyMembers.length === 0 && (
-                  <div className="text-center py-4 text-muted-foreground text-sm">
-                    Carregando participantes...
-                  </div>
-                )}
               </div>
             </div>
             

@@ -154,6 +154,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_party_member: {
+        Args: {
+          user_id: string
+          party_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
