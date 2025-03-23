@@ -450,7 +450,7 @@ export const getCurrentParty = async (userId: string) => {
     
     // Find active parties
     const activeParties = memberData
-      .filter(item => item.parties.is_active && !item.parties.checked_in)
+      .filter(item => item.parties && item.parties.is_active && !item.parties.checked_in)
       .map(item => item.parties);
     
     if (activeParties.length === 0) {
