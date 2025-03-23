@@ -448,7 +448,11 @@ export const getCurrentParty = async (userId: string) => {
       return { data: null, error: memberError };
     }
     
-    // Find active parties
+    if (!memberData || memberData.length === 0) {
+      return { data: null, error: null };
+    }
+    
+    // Find active parties - filter out any null parties entries first
     const activeParties = memberData
       .filter(item => item.parties && item.parties.is_active && !item.parties.checked_in)
       .map(item => item.parties);
