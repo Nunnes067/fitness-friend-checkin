@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 // These would typically come from environment variables
@@ -285,5 +284,305 @@ export const updateProfile = async (userId: string, updates: any) => {
   } catch (err) {
     console.error('Error updating profile:', err);
     return { data: null, error: err };
+  }
+};
+
+// Party system functions
+export const createParty = async (userId: string, maxMembers = 5, customMessage?: string) => {
+  try {
+    // Generate a code first
+    const { data: codeData, error: codeError } = await supabase
+      .rpc('generate_party_code');
+    
+    if (codeError) {
+      console.error('Error generating code:', codeError);
+      return { data: null, error: codeError };
+    }
+    
+    const code = codeData;
+    
+    // Create the party entry
+    const partyData = {
+      code,
+      creator_id: userId,
+      max_members: maxMembers,
+      ...(customMessage && { custom_message: customMessage })
+    };
+    
+    const { data, error } = await supabase
+      .from('parties')
+      .insert([partyData])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating party:', error);
+      return { data: null, error };
+    }
+    
+    // Add creator as a member automatically
+    const { error: memberError } = await supabase
+      .from('party_members')
+      .insert([{ party_id: data.id, user_id: userId }]);
+    
+    if (memberError) {
+      console.error('Error adding creator as member:', memberError);
+      // Continue anyway as the party was created
+    }
+    
+    return { data, error: null };
+  } catch (err) {
+    console.error('Error during party creation:', err);
+    return { data: null, error: err };
+  }
+};
+
+export const joinParty = async (userId: string, code: string) => {
+  try {
+    // Find the party with the given code
+    const { data: party, error: partyError } = await supabase
+      .from('parties')
+      .select('*')
+      .eq('code', code.toUpperCase())
+      .eq('is_active', true)
+      .single();
+    
+    if (partyError) {
+      return { data: null, error: partyError, message: 'Código inválido ou expirado' };
+    }
+    
+    // Check if party is full
+    const { data: members, error: membersError } = await supabase
+      .from('party_members')
+      .select('*')
+      .eq('party_id', party.id);
+    
+    if (membersError) {
+      return { data: null, error: membersError, message: 'Erro ao verificar membros' };
+    }
+    
+    if (members && members.length >= party.max_members) {
+      return { 
+        data: null, 
+        error: new Error('Party is full'), 
+        message: 'Este grupo já atingiu o limite máximo de membros' 
+      };
+    }
+    
+    // Check if user is already a member
+    const isMember = members.some(member => member.user_id === userId);
+    if (isMember) {
+      return { 
+        data: party, 
+        error: null, 
+        message: 'Você já é membro deste grupo' 
+      };
+    }
+    
+    // Add user as a member
+    const { data: memberData, error: memberError } = await supabase
+      .from('party_members')
+      .insert([{ party_id: party.id, user_id: userId }])
+      .select()
+      .single();
+    
+    if (memberError) {
+      return { data: null, error: memberError, message: 'Erro ao juntar-se ao grupo' };
+    }
+    
+    return { data: party, memberData, error: null, message: party.custom_message || 'Bem-vindo ao grupo!' };
+  } catch (err) {
+    console.error('Error joining party:', err);
+    return { data: null, error: err, message: 'Erro inesperado' };
+  }
+};
+
+export const getPartyMembers = async (partyId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('party_members')
+      .select(`
+        id,
+        user_id,
+        joined_at,
+        app_users:user_id (
+          id,
+          name,
+          email,
+          photo_url
+        )
+      `)
+      .eq('party_id', partyId)
+      .order('joined_at');
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Error fetching party members:', err);
+    return { data: null, error: err };
+  }
+};
+
+export const getCurrentParty = async (userId: string) => {
+  try {
+    // Get active parties where the user is a member
+    const { data: memberData, error: memberError } = await supabase
+      .from('party_members')
+      .select(`
+        party_id,
+        parties:party_id (
+          id,
+          code,
+          creator_id,
+          created_at,
+          expires_at,
+          is_active,
+          max_members,
+          custom_message,
+          checked_in
+        )
+      `)
+      .eq('user_id', userId);
+    
+    if (memberError) {
+      console.error('Error fetching user parties:', memberError);
+      return { data: null, error: memberError };
+    }
+    
+    // Find active parties
+    const activeParties = memberData
+      .filter(item => item.parties.is_active && !item.parties.checked_in)
+      .map(item => item.parties);
+    
+    if (activeParties.length === 0) {
+      return { data: null, error: null };
+    }
+    
+    // Return the most recent active party
+    const mostRecentParty = activeParties.sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )[0];
+    
+    return { data: mostRecentParty, error: null };
+  } catch (err) {
+    console.error('Error fetching current party:', err);
+    return { data: null, error: err };
+  }
+};
+
+export const leaveParty = async (userId: string, partyId: string) => {
+  try {
+    const { error } = await supabase
+      .from('party_members')
+      .delete()
+      .eq('party_id', partyId)
+      .eq('user_id', userId);
+    
+    return { error };
+  } catch (err) {
+    console.error('Error leaving party:', err);
+    return { error: err };
+  }
+};
+
+export const cancelParty = async (partyId: string, creatorId: string) => {
+  try {
+    // Verify that the user is the creator
+    const { data: party, error: partyError } = await supabase
+      .from('parties')
+      .select('creator_id')
+      .eq('id', partyId)
+      .single();
+    
+    if (partyError) {
+      return { error: partyError, message: 'Grupo não encontrado' };
+    }
+    
+    if (party.creator_id !== creatorId) {
+      return { error: new Error('Not authorized'), message: 'Apenas o criador pode cancelar o grupo' };
+    }
+    
+    // Update the party status
+    const { error } = await supabase
+      .from('parties')
+      .update({ is_active: false })
+      .eq('id', partyId);
+    
+    if (error) {
+      return { error, message: 'Erro ao cancelar o grupo' };
+    }
+    
+    return { error: null, message: 'Grupo cancelado com sucesso' };
+  } catch (err) {
+    console.error('Error canceling party:', err);
+    return { error: err, message: 'Erro inesperado' };
+  }
+};
+
+export const partyCheckIn = async (partyId: string, creatorId: string) => {
+  try {
+    // Verify that the user is the creator
+    const { data: party, error: partyError } = await supabase
+      .from('parties')
+      .select('creator_id, checked_in')
+      .eq('id', partyId)
+      .single();
+    
+    if (partyError) {
+      return { error: partyError, message: 'Grupo não encontrado' };
+    }
+    
+    if (party.creator_id !== creatorId) {
+      return { error: new Error('Not authorized'), message: 'Apenas o criador pode fazer check-in do grupo' };
+    }
+    
+    if (party.checked_in) {
+      return { error: new Error('Already checked in'), message: 'Este grupo já realizou check-in' };
+    }
+    
+    // Get all members
+    const { data: members, error: membersError } = await supabase
+      .from('party_members')
+      .select('user_id')
+      .eq('party_id', partyId);
+    
+    if (membersError) {
+      return { error: membersError, message: 'Erro ao verificar membros' };
+    }
+    
+    // Check in for all members
+    const today = new Date().toISOString().split('T')[0];
+    const checkInPromises = members.map(member => 
+      supabase
+        .from('check_ins')
+        .select('*')
+        .eq('user_id', member.user_id)
+        .eq('check_in_date', today)
+        .then(({ data }) => {
+          // Only check in if the user hasn't already checked in
+          if (!data || data.length === 0) {
+            return supabase
+              .from('check_ins')
+              .insert([{ user_id: member.user_id }]);
+          }
+          return { data: null, error: null };
+        })
+    );
+    
+    await Promise.all(checkInPromises);
+    
+    // Update the party status
+    const { error } = await supabase
+      .from('parties')
+      .update({ checked_in: true, is_active: false })
+      .eq('id', partyId);
+    
+    if (error) {
+      return { error, message: 'Erro ao atualizar status do grupo' };
+    }
+    
+    return { error: null, message: 'Check-in de grupo realizado com sucesso!' };
+  } catch (err) {
+    console.error('Error during party check-in:', err);
+    return { error: err, message: 'Erro inesperado' };
   }
 };

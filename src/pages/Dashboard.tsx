@@ -9,6 +9,7 @@ import { CheckInCard } from '@/components/dashboard/CheckInCard';
 import { DashboardTabs } from '@/components/dashboard/DashboardTabs';
 import { LoadingScreen } from '@/components/dashboard/LoadingScreen';
 import { AdminControls } from '@/components/dashboard/AdminControls';
+import { PartyCard } from '@/components/dashboard/PartyCard';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -48,7 +49,7 @@ const Dashboard = () => {
     };
     
     checkAuth();
-  }, [navigate]);
+  }, [navigate, refreshTrigger]);
   
   const handleCheckInSuccess = () => {
     setHasCheckedInToday(true);
@@ -73,6 +74,13 @@ const Dashboard = () => {
       <AdminControls 
         userId={user?.id} 
         onActionComplete={handleAdminActionComplete} 
+      />
+      
+      {/* Add Party Card */}
+      <PartyCard
+        userId={user?.id}
+        hasCheckedInToday={hasCheckedInToday}
+        onCheckInSuccess={handleCheckInSuccess}
       />
       
       <CheckInCard 

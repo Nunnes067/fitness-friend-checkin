@@ -74,11 +74,80 @@ export type Database = {
           },
         ]
       }
+      parties: {
+        Row: {
+          checked_in: boolean
+          code: string
+          created_at: string
+          creator_id: string
+          custom_message: string | null
+          expires_at: string
+          id: string
+          is_active: boolean
+          max_members: number
+        }
+        Insert: {
+          checked_in?: boolean
+          code: string
+          created_at?: string
+          creator_id: string
+          custom_message?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          max_members?: number
+        }
+        Update: {
+          checked_in?: boolean
+          code?: string
+          created_at?: string
+          creator_id?: string
+          custom_message?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          max_members?: number
+        }
+        Relationships: []
+      }
+      party_members: {
+        Row: {
+          id: string
+          joined_at: string
+          party_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          party_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          party_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "party_members_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      generate_party_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       is_admin: {
         Args: {
           user_id: string
