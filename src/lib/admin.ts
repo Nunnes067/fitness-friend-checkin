@@ -1,4 +1,5 @@
-import { supabase } from './supabase';
+
+import { supabase } from '@/integrations/supabase/client';
 
 // Function to check if the current user is an admin
 export const isAdmin = async (userId: string) => {
