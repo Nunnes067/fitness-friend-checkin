@@ -167,11 +167,19 @@ export const checkIn = async (userId: string, photoUrl?: string) => {
     
     // Update user's streak and last check-in date
     if (!error) {
+      // First get the current streak
+      const { data: userData } = await supabase
+        .from('app_users')
+        .select('streak')
+        .eq('id', userId)
+        .single();
+      
+      // Then increment it
       await supabase
         .from('app_users')
         .update({
           last_check_in: new Date().toISOString(),
-          streak: supabase.rpc('increment_streak', { user_id: userId })
+          streak: (userData?.streak || 0) + 1
         })
         .eq('id', userId);
     }
@@ -622,11 +630,19 @@ export const partyCheckIn = async (partyId: string, creatorId: string) => {
     
     // Update streak for all users
     for (const member of members) {
+      // First get the current streak
+      const { data: userData } = await supabase
+        .from('app_users')
+        .select('streak')
+        .eq('id', member.user_id)
+        .single();
+      
+      // Then increment it
       await supabase
         .from('app_users')
         .update({
           last_check_in: timestamp,
-          streak: supabase.rpc('increment_streak', { user_id: member.user_id })
+          streak: (userData?.streak || 0) + 1
         })
         .eq('id', member.user_id);
     }
