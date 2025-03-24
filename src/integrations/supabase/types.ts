@@ -14,6 +14,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          is_banned: boolean
           last_check_in: string | null
           name: string
           photo_url: string | null
@@ -24,6 +25,7 @@ export type Database = {
           created_at?: string
           email: string
           id: string
+          is_banned?: boolean
           last_check_in?: string | null
           name: string
           photo_url?: string | null
@@ -34,6 +36,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          is_banned?: boolean
           last_check_in?: string | null
           name?: string
           photo_url?: string | null
@@ -45,6 +48,7 @@ export type Database = {
       check_ins: {
         Row: {
           check_in_date: string
+          count_in_ranking: boolean
           id: string
           photo_url: string | null
           timestamp: string
@@ -52,6 +56,7 @@ export type Database = {
         }
         Insert: {
           check_in_date?: string
+          count_in_ranking?: boolean
           id?: string
           photo_url?: string | null
           timestamp?: string
@@ -59,6 +64,7 @@ export type Database = {
         }
         Update: {
           check_in_date?: string
+          count_in_ranking?: boolean
           id?: string
           photo_url?: string | null
           timestamp?: string
@@ -139,6 +145,35 @@ export type Database = {
           },
         ]
       }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          awarded_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          awarded_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          awarded_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -147,6 +182,18 @@ export type Database = {
       generate_party_code: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_users_with_seven_or_more_checkins: {
+        Args: {
+          start_date: string
+        }
+        Returns: {
+          id: string
+          name: string
+          email: string
+          photo_url: string
+          count: number
+        }[]
       }
       is_admin: {
         Args: {

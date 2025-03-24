@@ -78,7 +78,7 @@ export const getAllUsers = async () => {
   try {
     const { data, error } = await supabase
       .from('app_users')
-      .select('id, name, email, role, created_at')
+      .select('id, name, email, role, created_at, is_banned')
       .order('name');
     
     return { data, error };
