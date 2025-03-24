@@ -17,6 +17,23 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  
+  // PWA install event listener
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      // Prevent Chrome 67 and earlier from automatically showing the prompt
+      e.preventDefault();
+      // Stash the event so it can be triggered later
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -60,6 +77,26 @@ const Dashboard = () => {
     // Reset check-in status and refresh data
     setHasCheckedInToday(false);
     setRefreshTrigger(prev => prev + 1);
+  };
+
+  // PWA install handler that can be triggered by admin controls
+  const handleInstallPWA = () => {
+    if (deferredPrompt) {
+      // Show the install prompt
+      deferredPrompt.prompt();
+      
+      // Wait for the user to respond to the prompt
+      deferredPrompt.userChoice.then((choiceResult: any) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+          toast.success('Aplicativo instalado com sucesso!');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        // Clear the saved prompt since it can't be used again
+        setDeferredPrompt(null);
+      });
+    }
   };
 
   if (isLoading) {
