@@ -10,6 +10,7 @@ import { DashboardTabs } from '@/components/dashboard/DashboardTabs';
 import { LoadingScreen } from '@/components/dashboard/LoadingScreen';
 import { AdminControls } from '@/components/dashboard/AdminControls';
 import { PartyCard } from '@/components/dashboard/PartyCard';
+import { InstallPrompt } from '@/components/dashboard/InstallPrompt';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const Dashboard = () => {
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   
   // PWA install event listener
   useEffect(() => {
@@ -26,12 +28,32 @@ const Dashboard = () => {
       e.preventDefault();
       // Stash the event so it can be triggered later
       setDeferredPrompt(e);
+      // Show our custom install prompt after a short delay
+      setTimeout(() => {
+        setShowInstallPrompt(true);
+      }, 3000);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+  
+  // Check if the app was installed
+  useEffect(() => {
+    const handleAppInstalled = () => {
+      // Hide the prompt when installed
+      setShowInstallPrompt(false);
+      setDeferredPrompt(null);
+      toast.success('CheckMate instalado com sucesso!');
+    };
+
+    window.addEventListener('appinstalled', handleAppInstalled);
+    
+    return () => {
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
   
@@ -79,24 +101,32 @@ const Dashboard = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  // PWA install handler that can be triggered by admin controls
+  // PWA install handler
   const handleInstallPWA = () => {
-    if (deferredPrompt) {
-      // Show the install prompt
-      deferredPrompt.prompt();
-      
-      // Wait for the user to respond to the prompt
-      deferredPrompt.userChoice.then((choiceResult: any) => {
-        if (choiceResult.outcome === 'accepted') {
-          console.log('User accepted the install prompt');
-          toast.success('Aplicativo instalado com sucesso!');
-        } else {
-          console.log('User dismissed the install prompt');
-        }
-        // Clear the saved prompt since it can't be used again
-        setDeferredPrompt(null);
-      });
-    }
+    if (!deferredPrompt) return;
+    
+    // Show the install prompt
+    deferredPrompt.prompt();
+    
+    // Wait for the user to respond to the prompt
+    deferredPrompt.userChoice.then((choiceResult: any) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+        toast.success('Aplicativo instalado com sucesso!');
+      } else {
+        console.log('User dismissed the install prompt');
+      }
+      // Clear the saved prompt since it can't be used again
+      setDeferredPrompt(null);
+      setShowInstallPrompt(false);
+    });
+  };
+  
+  // Handle dismissing the install prompt
+  const handleDismissInstall = () => {
+    setShowInstallPrompt(false);
+    // Remember that the user dismissed it to avoid showing again too soon
+    localStorage.setItem('installPromptDismissed', Date.now().toString());
   };
 
   if (isLoading) {
@@ -129,6 +159,15 @@ const Dashboard = () => {
         refreshTrigger={refreshTrigger}
         userId={user?.id}
       />
+      
+      {/* Add Install Prompt */}
+      {showInstallPrompt && (
+        <InstallPrompt 
+          deferredPrompt={deferredPrompt}
+          onInstall={handleInstallPWA}
+          onDismiss={handleDismissInstall}
+        />
+      )}
     </DashboardLayout>
   );
 };
