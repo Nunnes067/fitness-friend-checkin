@@ -21,6 +21,7 @@ import { ProgressTracking } from '@/components/ProgressTracking';
 import { WorkoutForm } from '@/components/WorkoutForm';
 import { AchievementBadges } from '@/components/AchievementBadges';
 import { DailyHistory } from '@/components/DailyHistory';
+import { NutritionTab } from '@/components/nutrition/NutritionTab';
 
 interface DashboardTabsProps {
   refreshTrigger: number;
@@ -126,59 +127,7 @@ export function DashboardTabs({ refreshTrigger, userId }: DashboardTabsProps) {
           animate="visible"
           variants={fadeInUpVariants}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-card shadow-md rounded-lg p-4 border border-border">
-              <h3 className="text-lg font-medium mb-4 flex items-center">
-                <Calculator className="h-5 w-5 mr-2 text-primary" />
-                Calculadora de Gasto Energético
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Calcule seu metabolismo basal e gasto calórico diário
-              </p>
-              <div className="p-4 bg-muted rounded-md text-center text-muted-foreground">
-                Em breve disponível
-              </div>
-            </div>
-            
-            <div className="bg-card shadow-md rounded-lg p-4 border border-border">
-              <h3 className="text-lg font-medium mb-4 flex items-center">
-                <Target className="h-5 w-5 mr-2 text-primary" />
-                Metas de Emagrecimento
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Defina e acompanhe suas metas de peso e composição corporal
-              </p>
-              <div className="p-4 bg-muted rounded-md text-center text-muted-foreground">
-                Em breve disponível
-              </div>
-            </div>
-            
-            <div className="bg-card shadow-md rounded-lg p-4 border border-border">
-              <h3 className="text-lg font-medium mb-4 flex items-center">
-                <Activity className="h-5 w-5 mr-2 text-primary" />
-                Calculadora de IMC
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Calcule seu Índice de Massa Corporal e avalie sua composição
-              </p>
-              <div className="p-4 bg-muted rounded-md text-center text-muted-foreground">
-                Em breve disponível
-              </div>
-            </div>
-            
-            <div className="bg-card shadow-md rounded-lg p-4 border border-border">
-              <h3 className="text-lg font-medium mb-4 flex items-center">
-                <Apple className="h-5 w-5 mr-2 text-primary" />
-                Planejador de Refeições
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Organize sua alimentação de acordo com seus objetivos
-              </p>
-              <div className="p-4 bg-muted rounded-md text-center text-muted-foreground">
-                Em breve disponível
-              </div>
-            </div>
-          </div>
+          <NutritionTab userId={userId} />
         </motion.section>
       </TabsContent>
       
