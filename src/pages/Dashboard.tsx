@@ -20,8 +20,29 @@ const Dashboard = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
   
-  // PWA install event listener
+  // Detect iOS and show custom install prompt
+  useEffect(() => {
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    
+    // Check if the app is already installed (in standalone mode)
+    const isInStandaloneMode = 'standalone' in window.navigator && (window.navigator as any).standalone === true;
+    
+    if (isIOSDevice && !isInStandaloneMode) {
+      setIsIOS(true);
+      // Show iOS prompt after a delay
+      setTimeout(() => {
+        const lastPrompt = localStorage.getItem('installPromptDismissed');
+        // Only show if not dismissed recently (in the last 24 hours)
+        if (!lastPrompt || Date.now() - Number(lastPrompt) > 24 * 60 * 60 * 1000) {
+          setShowInstallPrompt(true);
+        }
+      }, 3000);
+    }
+  }, []);
+  
+  // PWA install event listener (for Android and desktop)
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
       // Prevent Chrome 67 and earlier from automatically showing the prompt
@@ -30,7 +51,11 @@ const Dashboard = () => {
       setDeferredPrompt(e);
       // Show our custom install prompt after a short delay
       setTimeout(() => {
-        setShowInstallPrompt(true);
+        const lastPrompt = localStorage.getItem('installPromptDismissed');
+        // Only show if not dismissed recently (in the last 24 hours)
+        if (!lastPrompt || Date.now() - Number(lastPrompt) > 24 * 60 * 60 * 1000) {
+          setShowInstallPrompt(true);
+        }
       }, 3000);
     };
 
@@ -166,6 +191,7 @@ const Dashboard = () => {
           deferredPrompt={deferredPrompt}
           onInstall={handleInstallPWA}
           onDismiss={handleDismissInstall}
+          isIOS={isIOS}
         />
       )}
     </DashboardLayout>
