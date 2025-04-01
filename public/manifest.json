@@ -1,8 +1,8 @@
 
 {
-  "name": "CheckMate",
+  "name": "CheckMate Fitness",
   "short_name": "CheckMate",
-  "description": "Seu companheiro diário na academia",
+  "description": "Seu companheiro completo de fitness e nutrição",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f8fafc",
