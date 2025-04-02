@@ -7,6 +7,7 @@ import { WeightGoals } from './WeightGoals';
 import { MealPlanner } from './MealPlanner';
 import { motion } from 'framer-motion';
 import { Apple, Calculator, Weight, Utensils } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface NutritionTabProps {
   userId: string;
@@ -14,6 +15,7 @@ interface NutritionTabProps {
 
 export function NutritionTab({ userId }: NutritionTabProps) {
   const [activeTab, setActiveTab] = useState('calories');
+  const isMobile = useIsMobile();
 
   const fadeInUpVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -27,7 +29,7 @@ export function NutritionTab({ userId }: NutritionTabProps) {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-4 mb-6">
+        <TabsList className={`${isMobile ? 'grid-cols-2 grid-rows-2' : 'grid-cols-4'} grid mb-6`}>
           <TabsTrigger value="calories" className="flex items-center justify-center">
             <Calculator className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Calculadora de Calorias</span>
