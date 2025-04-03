@@ -208,6 +208,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      process_party_check_in: {
+        Args: {
+          p_member_ids: string[]
+          p_check_in_date: string
+          p_timestamp: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

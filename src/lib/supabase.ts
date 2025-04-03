@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -645,8 +646,7 @@ export const partyCheckIn = async (partyId: string, creatorId: string) => {
     const memberIds = members.map(member => member.user_id);
     
     // Call RPC function to process check-ins for all members in a single call
-    // This is more efficient and avoids RLS issues
-    const { data: result, error: rpcError } = await supabase.rpc(
+    const { data, error: rpcError } = await supabase.rpc(
       'process_party_check_in',
       { 
         p_member_ids: memberIds,
@@ -666,7 +666,8 @@ export const partyCheckIn = async (partyId: string, creatorId: string) => {
       };
     }
     
-    const successCount = result?.success_count || 0;
+    // Extract success count from the returned JSON
+    const successCount = typeof data === 'object' && data !== null ? (data as any).success_count || 0 : 0;
     
     return { 
       error: null, 
