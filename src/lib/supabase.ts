@@ -646,7 +646,9 @@ export const partyCheckIn = async (partyId: string, creatorId: string) => {
     const memberIds = members.map(member => member.user_id);
     
     // Call RPC function to process check-ins for all members in a single call
-    const { data, error: rpcError } = await supabase.rpc(
+    // We need to use "as any" to bypass TypeScript's strict checking here
+    // since the process_party_check_in function is not yet in the types file
+    const { data, error: rpcError } = await (supabase.rpc as any)(
       'process_party_check_in',
       { 
         p_member_ids: memberIds,
