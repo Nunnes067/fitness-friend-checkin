@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -625,9 +624,7 @@ export const partyCheckIn = async (partyId: string, creatorId: string) => {
       };
     }
     
-    // Primeira modificação: Usar uma chamada RPC para contornar o RLS
-    // em vez de inserir diretamente na tabela check_ins
-    // Vamos usar o creatorId para fazer o update da party status primeiro
+    // Update party status to checked in first
     const { error: updateError } = await supabase
       .from('parties')
       .update({ checked_in: true })
@@ -639,57 +636,37 @@ export const partyCheckIn = async (partyId: string, creatorId: string) => {
       return { error: updateError };
     }
     
-    // Agora vamos processar check-ins e atualizar streaks individualmente
+    // Process check-ins for all members using a server-side function
+    // This avoids RLS issues as we're using a single authenticated call
     const today = new Date().toISOString().split('T')[0];
     const timestamp = new Date().toISOString();
-    let successCount = 0;
     
-    // Processar cada membro individualmente
-    for (const member of members) {
-      // Verificar se o usuário já fez check-in hoje
-      const { data: existingCheckIn } = await supabase
-        .from('check_ins')
-        .select('id')
-        .eq('user_id', member.user_id)
-        .eq('check_in_date', today)
-        .maybeSingle();
-      
-      if (!existingCheckIn) {
-        // Inserir check-in apenas se não existir
-        const { error: checkInError } = await supabase
-          .from('check_ins')
-          .insert({
-            user_id: member.user_id,
-            check_in_date: today,
-            timestamp: timestamp,
-            photo_url: null,
-          });
-        
-        if (checkInError) {
-          console.error(`Error checking in member ${member.user_id}:`, checkInError);
-          continue; // Continuar com próximo membro em caso de erro
-        }
-        
-        // Atualizar streak do usuário
-        const { data: userData } = await supabase
-          .from('app_users')
-          .select('streak')
-          .eq('id', member.user_id)
-          .single();
-        
-        await supabase
-          .from('app_users')
-          .update({
-            last_check_in: timestamp,
-            streak: (userData?.streak || 0) + 1
-          })
-          .eq('id', member.user_id);
-        
-        successCount++;
-      } else {
-        console.log(`User ${member.user_id} already checked in today`);
+    // Create batch of all member IDs
+    const memberIds = members.map(member => member.user_id);
+    
+    // Call RPC function to process check-ins for all members in a single call
+    // This is more efficient and avoids RLS issues
+    const { data: result, error: rpcError } = await supabase.rpc(
+      'process_party_check_in',
+      { 
+        p_member_ids: memberIds,
+        p_check_in_date: today,
+        p_timestamp: timestamp
       }
+    );
+    
+    if (rpcError) {
+      console.error('Error processing party check-in:', rpcError);
+      
+      // Even if the RPC call fails, we'll still show the party as checked in
+      // since we already updated that status
+      return { 
+        error: rpcError,
+        message: 'Houve um problema ao registrar alguns check-ins, mas a party foi marcada como concluída'
+      };
     }
+    
+    const successCount = result?.success_count || 0;
     
     return { 
       error: null, 
