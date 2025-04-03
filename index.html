@@ -41,6 +41,13 @@
             });
         });
       }
+      
+      // Detectar se o aplicativo está rodando no Capacitor
+      window.isInCapacitor = false;
+      document.addEventListener('deviceready', function() {
+        window.isInCapacitor = true;
+        console.log('Aplicativo rodando no Capacitor');
+      });
     </script>
   </body>
 </html>

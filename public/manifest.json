@@ -7,6 +7,7 @@
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#6366f1",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -20,5 +21,16 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Fazer Check-in",
+      "short_name": "Check-in",
+      "description": "Faça seu check-in diário",
+      "url": "/dashboard?action=checkin",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
 }

@@ -9,12 +9,20 @@ interface InstallPromptProps {
   onInstall: () => void;
   onDismiss: () => void;
   isIOS?: boolean;
+  isInCapacitor?: boolean;
 }
 
-export function InstallPrompt({ deferredPrompt, onInstall, onDismiss, isIOS = false }: InstallPromptProps) {
+export function InstallPrompt({ 
+  deferredPrompt, 
+  onInstall, 
+  onDismiss, 
+  isIOS = false,
+  isInCapacitor = false
+}: InstallPromptProps) {
   const isMobile = useIsMobile();
   
-  if (!deferredPrompt && !isIOS) return null;
+  // Don't show install prompt if running in Capacitor (already installed)
+  if (isInCapacitor || (!deferredPrompt && !isIOS)) return null;
   
   return (
     <div className="fixed bottom-0 left-0 right-0 p-4 z-50 bg-background border-t border-primary/10 shadow-lg animate-slide-in-up">

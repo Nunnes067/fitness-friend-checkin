@@ -1,5 +1,5 @@
 
-// Service Worker para PWA
+// Service Worker para PWA e aplicativo móvel
 
 const CACHE_NAME = 'checkmate-v1';
 const urlsToCache = [
@@ -7,7 +7,8 @@ const urlsToCache = [
   '/index.html',
   '/manifest.json',
   '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  '/icons/icon-512x512.png',
+  '/icons/apple-touch-icon.png'
 ];
 
 // Instalação do Service Worker
@@ -19,6 +20,8 @@ self.addEventListener('install', (event) => {
         return cache.addAll(urlsToCache);
       })
   );
+  // Force the waiting service worker to become the active service worker
+  self.skipWaiting();
 });
 
 // Ativação do Service Worker
@@ -35,29 +38,66 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
+  // Claim any clients immediately
+  self.clients.claim();
 });
 
-// Fetch com estratégia Network First, depois Cache
+// Estratégia Cache First, depois Network
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    fetch(event.request)
+    caches.match(event.request)
       .then((response) => {
-        // Clone da resposta para armazenar no cache
-        const responseToCache = response.clone();
+        // Cache hit - return response
+        if (response) {
+          return response;
+        }
         
-        caches.open(CACHE_NAME)
-          .then((cache) => {
-            // Armazena a resposta no cache
-            if (event.request.method === 'GET') {
-              cache.put(event.request, responseToCache);
+        return fetch(event.request)
+          .then((response) => {
+            // Check if we received a valid response
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
             }
+            
+            // Clone the response
+            const responseToCache = response.clone();
+            
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                // Store the fetched response in the cache
+                if (event.request.method === 'GET') {
+                  cache.put(event.request, responseToCache);
+                }
+              });
+              
+            return response;
           });
-          
-        return response;
-      })
-      .catch(() => {
-        // Se falhar a requisição, busca no cache
-        return caches.match(event.request);
       })
   );
 });
+
+// Sincronização em segundo plano
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-checkins') {
+    event.waitUntil(syncCheckins());
+  }
+});
+
+// Função para sincronizar check-ins offline
+async function syncCheckins() {
+  try {
+    const offlineCheckins = await getOfflineCheckins();
+    if (offlineCheckins.length > 0) {
+      // Aqui implementaríamos a lógica para enviar os check-ins
+      // armazenados localmente para o servidor
+      console.log('Sincronizando check-ins offline:', offlineCheckins);
+    }
+  } catch (error) {
+    console.error('Erro ao sincronizar check-ins:', error);
+  }
+}
+
+// Função mock para obter check-ins offline (implementação real usaria IndexedDB)
+function getOfflineCheckins() {
+  return Promise.resolve([]);
+}
