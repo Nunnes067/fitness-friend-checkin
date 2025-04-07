@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import DownloadApp from "./pages/DownloadApp";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ const AnimatedRoutes = () => {
         <Route path="/" element={<Index />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/download-app" element={<DownloadApp />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AnimatePresence>

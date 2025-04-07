@@ -1,8 +1,9 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, X } from 'lucide-react';
+import { Download, Smartphone, X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Link } from 'react-router-dom';
 
 interface InstallPromptProps {
   deferredPrompt: any;
@@ -29,7 +30,7 @@ export function InstallPrompt({
       <div className="container mx-auto max-w-6xl flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-full bg-primary/10">
-            <Download className="h-5 w-5 text-primary" />
+            <Smartphone className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h3 className="font-medium">Instale o CheckMate</h3>
@@ -47,12 +48,20 @@ export function InstallPrompt({
             <X className="h-4 w-4 mr-1" />
             Agora não
           </Button>
-          {!isIOS && (
+          
+          {!isIOS && deferredPrompt && (
             <Button variant="default" size="sm" onClick={onInstall}>
               <Download className="h-4 w-4 mr-1" />
               Instalar
             </Button>
           )}
+          
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/download-app">
+              <Smartphone className="h-4 w-4 mr-1" />
+              Baixar APK
+            </Link>
+          </Button>
         </div>
       </div>
     </div>
