@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2, Smartphone } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -10,21 +10,51 @@ const DownloadApp = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState('');
   const [generationStep, setGenerationStep] = useState(0);
+  const [stepMessage, setStepMessage] = useState('');
   
   const steps = [
+    'Iniciando compilação do APK...',
     'Compilando projeto web...',
-    'Sincronizando com Capacitor...',
-    'Construindo APK usando Gradle...',
+    'Gerando APK Android...',
     'Finalizando processo...'
   ];
+
+  // Check if there's a download in progress on page load
+  useEffect(() => {
+    const checkInProgressDownload = async () => {
+      try {
+        // Try to get the latest status
+        const response = await fetch('/api/build-status');
+        if (response.ok) {
+          const text = await response.text();
+          // Get the last data entry
+          const dataLines = text.trim().split('\n');
+          if (dataLines.length > 0) {
+            const lastLine = dataLines[dataLines.length - 1];
+            const data = JSON.parse(lastLine.replace('data: ', ''));
+            
+            if (data.downloadUrl && data.ready) {
+              setDownloadUrl(data.downloadUrl);
+              toast.success('APK pronto para download!');
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao verificar status:', error);
+      }
+    };
+    
+    checkInProgressDownload();
+  }, []);
 
   const handleGenerateApk = async () => {
     setIsGenerating(true);
     setGenerationStep(0);
+    setStepMessage(steps[0]);
     setDownloadUrl('');
     
     try {
-      // Simulamos os passos de build com setTimeouts
+      // Iniciar processo de build
       const response = await fetch('/api/build-apk', { 
         method: 'POST',
       });
@@ -33,7 +63,7 @@ const DownloadApp = () => {
         throw new Error('Falha ao gerar o APK');
       }
       
-      // Acompanhar progresso simulado
+      // Acompanhar progresso
       const eventSource = new EventSource('/api/build-status');
       
       eventSource.onmessage = (event) => {
@@ -41,13 +71,16 @@ const DownloadApp = () => {
         
         if (data.step !== undefined) {
           setGenerationStep(data.step);
+          setStepMessage(data.message || steps[data.step]);
         }
         
-        if (data.downloadUrl) {
+        if (data.downloadUrl && data.ready) {
           setDownloadUrl(data.downloadUrl);
           setIsGenerating(false);
           eventSource.close();
-          toast.success('APK gerado com sucesso!');
+          toast.success('APK gerado com sucesso!', {
+            description: 'Clique no botão para fazer o download'
+          });
         }
         
         if (data.error) {
@@ -66,6 +99,22 @@ const DownloadApp = () => {
     } catch (error) {
       toast.error('Erro ao iniciar processo de geração do APK');
       setIsGenerating(false);
+    }
+  };
+  
+  const handleDownloadClick = () => {
+    if (downloadUrl) {
+      // Create an anchor element and set the download attribute
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.setAttribute('download', 'checkmate-app.apk');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Download iniciado!', {
+        description: 'O arquivo será salvo na pasta de downloads'
+      });
     }
   };
 
@@ -97,14 +146,15 @@ const DownloadApp = () => {
             </p>
             
             {downloadUrl ? (
-              <Button onClick={() => window.open(downloadUrl, '_blank')}>
+              <Button onClick={handleDownloadClick} className="w-full">
                 <Download className="mr-2 h-4 w-4" />
-                Baixar APK
+                Baixar APK (.apk)
               </Button>
             ) : (
               <Button 
                 onClick={handleGenerateApk} 
                 disabled={isGenerating}
+                className="w-full"
               >
                 {isGenerating ? (
                   <>
@@ -129,7 +179,7 @@ const DownloadApp = () => {
                   ></div>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2">
-                  {steps[generationStep]}
+                  {stepMessage}
                 </p>
               </div>
             )}

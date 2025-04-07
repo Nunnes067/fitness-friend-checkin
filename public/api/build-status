@@ -1,10 +1,10 @@
 
-data: {"step": 0}
+data: {"step": 0, "message": "Iniciando compilação do APK..."}
 
-data: {"step": 1}
+data: {"step": 1, "message": "Compilando projeto web..."}
 
-data: {"step": 2}
+data: {"step": 2, "message": "Gerando APK Android..."}
 
-data: {"step": 3}
+data: {"step": 3, "message": "Finalizando processo..."}
 
-data: {"downloadUrl": "/android-app/checkmate-app.apk"}
+data: {"downloadUrl": "/android-app/checkmate-app.apk", "ready": true}
