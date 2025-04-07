@@ -97,7 +97,7 @@ export function PartyDetails({
     }
   };
   
-  // New photo handling functions
+  // Photo handling functions
   const openPhotoDialog = () => {
     if (hasCheckedInToday) {
       toast.info("Você já fez check-in hoje!", {
@@ -127,7 +127,7 @@ export function PartyDetails({
   };
   
   const handlePartyCheckIn = async () => {
-    if (!currentParty || !isCreator || !photoPreview) {
+    if (!currentParty || !photoPreview) {
       toast.error('Por favor, tire uma foto para fazer o check-in do grupo');
       return;
     }
@@ -136,18 +136,21 @@ export function PartyDetails({
     
     try {
       console.log("Performing party check-in for party:", currentParty.id);
+      
+      // Make sure we pass the full party object to include all member data
       const { error, message } = await partyCheckIn(currentParty.id, userId, photoPreview);
       
       if (error) {
+        console.error("Party check-in error:", error);
         toast.error('Erro ao fazer check-in do grupo', {
           description: message || error.message,
         });
-        closePhotoDialog();
         return;
       }
       
       toast.success(message || 'Check-in de grupo realizado com sucesso!', {
         icon: <PartyPopper className="h-4 w-4 text-yellow-500" />,
+        duration: 5000,
       });
       
       // Close the dialog
@@ -237,17 +240,21 @@ export function PartyDetails({
           className="w-full py-6"
           size="lg"
           onClick={openPhotoDialog}
-          disabled={hasCheckedInToday}
+          disabled={hasCheckedInToday || currentParty.checked_in}
         >
           <CheckSquare className="mr-2 h-5 w-5" />
-          Fazer Check-in do Grupo com Foto
+          {currentParty.checked_in 
+            ? "Check-in já realizado" 
+            : "Fazer Check-in do Grupo com Foto"}
         </Button>
       )}
       
       {!isCreator && (
         <Alert className="bg-secondary/30">
           <AlertDescription className="text-center text-sm">
-            Aguarde o criador da Party iniciar o check-in do grupo.
+            {currentParty.checked_in 
+              ? "Este grupo já realizou check-in hoje!" 
+              : "Aguarde o criador da Party iniciar o check-in do grupo."}
           </AlertDescription>
         </Alert>
       )}
@@ -257,7 +264,8 @@ export function PartyDetails({
           <DialogHeader>
             <DialogTitle>Check-in em Grupo</DialogTitle>
             <DialogDescription>
-              Tire uma foto para confirmar a presença de todos do grupo na academia.
+              Tire uma foto para confirmar a presença de todos do grupo na academia. 
+              Todos os membros do grupo receberão o check-in automaticamente.
             </DialogDescription>
           </DialogHeader>
           

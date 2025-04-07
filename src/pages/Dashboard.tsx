@@ -162,13 +162,13 @@ const Dashboard = () => {
     <DashboardLayout user={user}>
       <WelcomeHeader />
       
-      {/* Add Admin Controls */}
+      {/* Admin Controls */}
       <AdminControls 
         userId={user?.id} 
         onActionComplete={handleAdminActionComplete} 
       />
       
-      {/* Add Party Card */}
+      {/* Party Card */}
       <PartyCard
         userId={user?.id}
         hasCheckedInToday={hasCheckedInToday}
@@ -185,7 +185,7 @@ const Dashboard = () => {
         userId={user?.id}
       />
       
-      {/* Add Install Prompt */}
+      {/* Install Prompt */}
       {showInstallPrompt && (
         <InstallPrompt 
           deferredPrompt={deferredPrompt}

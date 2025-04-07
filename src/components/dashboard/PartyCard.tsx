@@ -43,20 +43,21 @@ export function PartyCard({ userId, hasCheckedInToday, onCheckInSuccess }: Party
       }, (payload: any) => {
         console.log("Realtime update received for party status:", payload);
         
-        // Verificar se a party foi desativada ou check-in realizado
+        // Check if party was deactivated or checked in
         if (payload.new && (
           payload.new.is_active !== currentParty.is_active ||
           payload.new.checked_in !== currentParty.checked_in
         )) {
           if (!payload.new.is_active) {
-            // Party foi cancelada
+            // Party was canceled
             setCurrentParty(null);
             toast.info('A party foi cancelada pelo criador');
           } else if (payload.new.checked_in && !currentParty.checked_in) {
-            // Check-in foi realizado
+            // Check-in was done
             onCheckInSuccess();
             toast.success('Check-in realizado pelo criador da party!', {
               icon: <PartyPopper className="h-4 w-4 text-yellow-500" />,
+              duration: 5000,
             });
             // Update local state
             setCurrentParty({...currentParty, checked_in: true});
@@ -72,7 +73,7 @@ export function PartyCard({ userId, hasCheckedInToday, onCheckInSuccess }: Party
       console.log("Cleaning up party status subscription");
       supabase.removeChannel(channel);
     };
-  }, [currentParty]);
+  }, [currentParty, onCheckInSuccess]);
   
   const fetchCurrentParty = async () => {
     try {

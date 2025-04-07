@@ -224,3 +224,131 @@ export const runPrizeWheelDraw = async () => {
     };
   }
 };
+
+// New admin functions
+
+// Function to reset user streak
+export const resetUserStreak = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('app_users')
+      .update({ streak: 0 })
+      .eq('id', userId)
+      .select()
+      .single();
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Error resetting user streak:', err);
+    return { data: null, error: err };
+  }
+};
+
+// Function to set user streak to specific value
+export const setUserStreak = async (userId: string, streakValue: number) => {
+  try {
+    const { data, error } = await supabase
+      .from('app_users')
+      .update({ streak: streakValue })
+      .eq('id', userId)
+      .select()
+      .single();
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Error setting user streak:', err);
+    return { data: null, error: err };
+  }
+};
+
+// Function to cancel a party
+export const cancelAllParties = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('parties')
+      .update({ is_active: false })
+      .eq('is_active', true)
+      .select();
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Error canceling all parties:', err);
+    return { data: null, error: err };
+  }
+};
+
+// Function to get all active parties
+export const getAllActiveParties = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('parties')
+      .select(`
+        id, 
+        code,
+        creator_id,
+        created_at,
+        expires_at,
+        is_active,
+        checked_in,
+        app_users:creator_id (name, email)
+      `)
+      .eq('is_active', true);
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Error fetching active parties:', err);
+    return { data: null, error: err };
+  }
+};
+
+// Function to extend a party expiration time
+export const extendPartyExpiration = async (partyId: string, hoursToAdd: number = 24) => {
+  try {
+    const { data: currentParty, error: fetchError } = await supabase
+      .from('parties')
+      .select('expires_at')
+      .eq('id', partyId)
+      .single();
+      
+    if (fetchError || !currentParty) {
+      return { data: null, error: fetchError || new Error('Party not found') };
+    }
+    
+    // Calculate new expiration time
+    const currentExpiry = new Date(currentParty.expires_at);
+    const newExpiry = new Date(currentExpiry.getTime() + (hoursToAdd * 60 * 60 * 1000));
+    
+    const { data, error } = await supabase
+      .from('parties')
+      .update({ expires_at: newExpiry.toISOString() })
+      .eq('id', partyId)
+      .select();
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Error extending party expiration:', err);
+    return { data: null, error: err };
+  }
+};
+
+// Function to get all check-ins for a specific date
+export const getCheckInsByDate = async (checkInDate: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('check_ins')
+      .select(`
+        id, 
+        user_id,
+        check_in_date,
+        timestamp,
+        photo_url,
+        app_users:user_id (name, email)
+      `)
+      .eq('check_in_date', checkInDate);
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Error fetching check-ins by date:', err);
+    return { data: null, error: err };
+  }
+};
