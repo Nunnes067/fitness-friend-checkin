@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
@@ -57,6 +58,8 @@ export function PartyCard({ userId, hasCheckedInToday, onCheckInSuccess }: Party
             toast.success('Check-in realizado pelo criador da party!', {
               icon: <PartyPopper className="h-4 w-4 text-yellow-500" />,
             });
+            // Update local state
+            setCurrentParty({...currentParty, checked_in: true});
           } else {
             // Outra atualização, buscar dados atualizados
             fetchCurrentParty();

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -572,7 +571,7 @@ export const cancelParty = async (partyId: string, creatorId: string) => {
   }
 };
 
-export const partyCheckIn = async (partyId: string, creatorId: string) => {
+export const partyCheckIn = async (partyId: string, creatorId: string, photoUrl?: string) => {
   try {
     // Verify the user is the creator
     const { data: party, error: checkError } = await supabase
@@ -624,6 +623,36 @@ export const partyCheckIn = async (partyId: string, creatorId: string) => {
         message: 'Esta party não tem membros' 
       };
     }
+
+    // Process photo upload if provided
+    let photoUrlToStore = null;
+    if (photoUrl) {
+      // If the photoUrl is a data URL, upload it to Supabase Storage
+      if (photoUrl.startsWith('data:')) {
+        const fileName = `party-check-in-${partyId}-${Date.now()}.jpg`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('check-ins')
+          .upload(fileName, photoUrl, {
+            contentType: 'image/jpeg',
+            upsert: true,
+          });
+        
+        if (uploadError) {
+          console.error('Error uploading photo:', uploadError);
+          return { error: uploadError, message: 'Erro ao fazer upload da foto' };
+        } else {
+          // Get public URL for the uploaded file
+          const { data: publicUrlData } = supabase.storage
+            .from('check-ins')
+            .getPublicUrl(fileName);
+          
+          photoUrlToStore = publicUrlData?.publicUrl;
+        }
+      } else {
+        // If it's already a URL, just store it
+        photoUrlToStore = photoUrl;
+      }
+    }
     
     // Update party status to checked in first
     const { error: updateError } = await supabase
@@ -646,14 +675,13 @@ export const partyCheckIn = async (partyId: string, creatorId: string) => {
     const memberIds = members.map(member => member.user_id);
     
     // Call RPC function to process check-ins for all members in a single call
-    // We need to use "as any" to bypass TypeScript's strict checking here
-    // since the process_party_check_in function is not yet in the types file
     const { data, error: rpcError } = await (supabase.rpc as any)(
-      'process_party_check_in',
+      'process_party_check_in_with_photo',
       { 
         p_member_ids: memberIds,
         p_check_in_date: today,
-        p_timestamp: timestamp
+        p_timestamp: timestamp,
+        p_photo_url: photoUrlToStore
       }
     );
     
