@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { PartyPopper } from 'lucide-react';
+import { PartyPopper, Watch } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
   getCurrentParty,
@@ -10,6 +10,8 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { PartyForm } from './party/PartyForm';
 import { PartyDetails } from './party/PartyDetails';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 interface PartyCardProps {
   userId: string;
@@ -148,6 +150,20 @@ export function PartyCard({ userId, hasCheckedInToday, onCheckInSuccess }: Party
             hasCheckedInToday={hasCheckedInToday}
             onPartyCreated={handlePartyCreated}
           />
+          
+          <div className="mt-6 border-t border-border/30 pt-4 flex justify-center">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              asChild
+              className="flex items-center text-xs text-muted-foreground hover:text-foreground"
+            >
+              <Link to="/smartwatch">
+                <Watch className="h-3.5 w-3.5 mr-1.5" />
+                Acessar versão para Smartwatch
+              </Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </motion.section>

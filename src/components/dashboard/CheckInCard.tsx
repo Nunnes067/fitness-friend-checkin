@@ -1,11 +1,12 @@
 
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, Share2 } from 'lucide-react';
+import { Calendar, Share2, Watch } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { CheckInButton } from '@/components/CheckInButton';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 
 interface CheckInCardProps {
   userId: string;
@@ -69,9 +70,9 @@ export function CheckInCard({ userId, hasCheckedInToday, onCheckInSuccess }: Che
             Os check-ins são reiniciados todos os dias à meia-noite
           </div>
 
-          {hasCheckedInToday && (
+          {hasCheckedInToday ? (
             <motion.div 
-              className="mt-4"
+              className="mt-4 space-y-3"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
@@ -85,7 +86,35 @@ export function CheckInCard({ userId, hasCheckedInToday, onCheckInSuccess }: Che
                 <Share2 className="h-4 w-4" />
                 Compartilhar meu check-in
               </Button>
+              
+              <div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  asChild
+                  className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <Link to="/smartwatch">
+                    <Watch className="h-3.5 w-3.5" />
+                    Ver no Smartwatch
+                  </Link>
+                </Button>
+              </div>
             </motion.div>
+          ) : (
+            <div className="mt-4">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                asChild
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <Link to="/smartwatch">
+                  <Watch className="h-3.5 w-3.5 mr-1" />
+                  Experimentar no Smartwatch
+                </Link>
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
