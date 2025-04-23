@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
@@ -7,6 +8,7 @@ import Profile from '@/pages/Profile';
 import NotFound from '@/pages/NotFound';
 import DownloadApp from '@/pages/DownloadApp';
 import SmartWatch from '@/pages/SmartWatch';
+import Groups from '@/pages/Groups';
 
 function App() {
   return (
@@ -18,6 +20,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/download-app" element={<DownloadApp />} />
           <Route path="/smartwatch" element={<SmartWatch />} />
+          <Route path="/groups" element={<Groups />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>

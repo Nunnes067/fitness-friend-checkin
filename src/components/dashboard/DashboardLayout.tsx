@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { AnimatedLogo } from '@/components/ui/AnimatedLogo';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Download, LogOut, User } from 'lucide-react';
+import { Download, LogOut, User, Users } from 'lucide-react';
 import { signOut } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -37,6 +37,26 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
           </div>
           
           <div className="flex items-center space-x-2 md:space-x-4">
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden md:flex"
+              onClick={() => navigate('/groups')}
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Grupos
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/groups')}
+              title="Grupos"
+              className="md:hidden hover:text-primary hover:bg-primary/5"
+            >
+              <Users className="h-4 w-4" />
+            </Button>
+            
             <Button
               variant="outline"
               size="sm"

@@ -80,6 +80,42 @@ export type Database = {
           },
         ]
       }
+      loan_proposals: {
+        Row: {
+          created_at: string
+          due_date: string
+          id: string
+          payment_key: string | null
+          payment_link: string
+          payment_value: number
+          status: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          due_date: string
+          id?: string
+          payment_key?: string | null
+          payment_link: string
+          payment_value: number
+          status?: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          due_date?: string
+          id?: string
+          payment_key?: string | null
+          payment_link?: string
+          payment_value?: number
+          status?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
       parties: {
         Row: {
           checked_in: boolean
