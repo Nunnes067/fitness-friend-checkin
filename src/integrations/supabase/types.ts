@@ -80,6 +80,102 @@ export type Database = {
           },
         ]
       }
+      group_members: {
+        Row: {
+          group_id: string
+          id: string
+          is_admin: boolean
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          is_admin?: boolean
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          is_admin?: boolean
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "training_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "group_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_posts: {
+        Row: {
+          content: string | null
+          created_at: string
+          group_id: string
+          id: string
+          image_url: string | null
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          group_id: string
+          id?: string
+          image_url?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          group_id?: string
+          id?: string
+          image_url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_posts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "training_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loan_proposals: {
         Row: {
           created_at: string
@@ -181,6 +277,36 @@ export type Database = {
           },
         ]
       }
+      training_groups: {
+        Row: {
+          created_at: string
+          creator_id: string
+          description: string | null
+          id: string
+          invite_code: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          id?: string
+          invite_code: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          id?: string
+          invite_code?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
       user_achievements: {
         Row: {
           achievement_id: string
@@ -215,6 +341,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_group_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_party_code: {
         Args: Record<PropertyKey, never>
         Returns: string

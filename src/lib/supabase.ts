@@ -789,115 +789,6 @@ export const getUserRole = async (userId: string) => {
 };
 
 // Group Management Functions
-export const createGroup = async ({ name, description, creatorId }: { name: string, description: string, creatorId: string }) => {
-  try {
-    // Generate a random 6-character code
-    const { data: code, error: codeError } = await supabase.rpc('generate_group_code');
-    
-    if (codeError) {
-      console.error('Error generating group code:', codeError);
-      return { data: null, error: codeError };
-    }
-    
-    // Create the group
-    const { data: group, error: groupError } = await supabase
-      .from('training_groups')
-      .insert({
-        name,
-        description,
-        creator_id: creatorId,
-        invite_code: code
-      })
-      .select()
-      .single();
-    
-    if (groupError) {
-      console.error('Error creating group:', groupError);
-      return { data: null, error: groupError };
-    }
-    
-    // Add creator as the first member
-    const { error: memberError } = await supabase
-      .from('group_members')
-      .insert({
-        group_id: group.id,
-        user_id: creatorId,
-        is_admin: true
-      });
-    
-    if (memberError) {
-      console.error('Error adding creator to group:', memberError);
-      // Attempt to delete the group if we couldn't add the creator
-      await supabase
-        .from('training_groups')
-        .delete()
-        .eq('id', group.id);
-      return { data: null, error: memberError };
-    }
-    
-    return { data: group, error: null };
-  } catch (err) {
-    console.error('Unexpected error creating group:', err);
-    return { data: null, error: err };
-  }
-};
-
-export const joinGroup = async (userId: string, inviteCode: string) => {
-  try {
-    // Find the group by code
-    const { data: group, error: groupError } = await supabase
-      .from('training_groups')
-      .select('*')
-      .eq('invite_code', inviteCode)
-      .eq('is_active', true)
-      .single();
-    
-    if (groupError) {
-      if (groupError.code === 'PGRST116') {
-        return { data: null, error: groupError, message: 'Código de convite inválido ou expirado' };
-      }
-      console.error('Error finding group:', groupError);
-      return { data: null, error: groupError };
-    }
-    
-    // Check if user is already a member
-    const { data: existingMember, error: memberCheckError } = await supabase
-      .from('group_members')
-      .select('id')
-      .eq('group_id', group.id)
-      .eq('user_id', userId)
-      .maybeSingle();
-    
-    if (memberCheckError && memberCheckError.code !== 'PGRST116') {
-      console.error('Error checking group membership:', memberCheckError);
-      return { data: null, error: memberCheckError };
-    }
-    
-    if (existingMember) {
-      return { data: group, error: null, message: 'Você já é membro deste grupo' };
-    }
-    
-    // Add user to group
-    const { error: joinError } = await supabase
-      .from('group_members')
-      .insert({
-        group_id: group.id,
-        user_id: userId,
-        is_admin: false
-      });
-    
-    if (joinError) {
-      console.error('Error joining group:', joinError);
-      return { data: null, error: joinError };
-    }
-    
-    return { data: group, error: null, message: 'Você entrou no grupo!' };
-  } catch (err) {
-    console.error('Unexpected error joining group:', err);
-    return { data: null, error: err };
-  }
-};
-
 export const getUserGroups = async (userId: string) => {
   try {
     const { data, error } = await supabase
@@ -965,15 +856,111 @@ export const getUserGroups = async (userId: string) => {
   }
 };
 
-export const leaveGroup = async (userId: string, groupId: string) => {
+export const joinGroup = async (userId: string, inviteCode: string) => {
   try {
-    // Check if user is the creator
+    // Find the group by code
     const { data: group, error: groupError } = await supabase
       .from('training_groups')
-      .select('creator_id')
-      .eq('id', groupId)
+      .select('*')
+      .eq('invite_code', inviteCode)
+      .eq('is_active', true)
       .single();
     
     if (groupError) {
-      console.error('Error checking group creator:', groupError);
-      return { error: group
+      if (groupError.code === 'PGRST116') {
+        return { data: null, error: groupError, message: 'Código de convite inválido ou expirado' };
+      }
+      console.error('Error finding group:', groupError);
+      return { data: null, error: groupError };
+    }
+    
+    // Check if user is already a member
+    const { data: existingMember, error: memberCheckError } = await supabase
+      .from('group_members')
+      .select('id')
+      .eq('group_id', group.id)
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    if (memberCheckError && memberCheckError.code !== 'PGRST116') {
+      console.error('Error checking group membership:', memberCheckError);
+      return { data: null, error: memberCheckError };
+    }
+    
+    if (existingMember) {
+      return { data: group, error: null, message: 'Você já é membro deste grupo' };
+    }
+    
+    // Add user to group
+    const { error: joinError } = await supabase
+      .from('group_members')
+      .insert({
+        group_id: group.id,
+        user_id: userId,
+        is_admin: false
+      });
+    
+    if (joinError) {
+      console.error('Error joining group:', joinError);
+      return { data: null, error: joinError };
+    }
+    
+    return { data: group, error: null, message: 'Você entrou no grupo!' };
+  } catch (err) {
+    console.error('Unexpected error joining group:', err);
+    return { data: null, error: err };
+  }
+};
+
+export const createGroup = async ({ name, description, creatorId }: { name: string, description: string, creatorId: string }) => {
+  try {
+    // Generate a random 6-character code
+    const { data: code, error: codeError } = await supabase.rpc('generate_group_code');
+    
+    if (codeError) {
+      console.error('Error generating group code:', codeError);
+      return { data: null, error: codeError };
+    }
+    
+    // Create the group
+    const { data: group, error: groupError } = await supabase
+      .from('training_groups')
+      .insert({
+        name,
+        description,
+        creator_id: creatorId,
+        invite_code: code
+      })
+      .select()
+      .single();
+    
+    if (groupError) {
+      console.error('Error creating group:', groupError);
+      return { data: null, error: groupError };
+    }
+    
+    // Add creator as the first member
+    const { error: memberError } = await supabase
+      .from('group_members')
+      .insert({
+        group_id: group.id,
+        user_id: creatorId,
+        is_admin: true
+      });
+    
+    if (memberError) {
+      console.error('Error adding creator to group:', memberError);
+      // Attempt to delete the group if we couldn't add the creator
+      await supabase
+        .from('training_groups')
+        .delete()
+        .eq('id', group.id);
+      return { data: null, error: memberError };
+    }
+    
+    return { data: group, error: null };
+  } catch (err) {
+    console.error('Unexpected error creating group:', err);
+    return { data: null, error: err };
+  }
+};
