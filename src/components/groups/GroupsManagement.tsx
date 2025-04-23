@@ -116,7 +116,6 @@ export function GroupsManagement({ userId }: GroupsManagementProps) {
               <CardContent>
                 <CreateGroupForm 
                   userId={userId}
-                  onCancel={() => setShowCreateForm(false)}
                   onSuccess={handleCreateSuccess}
                 />
               </CardContent>
@@ -132,7 +131,6 @@ export function GroupsManagement({ userId }: GroupsManagementProps) {
               <CardContent>
                 <JoinGroupForm 
                   userId={userId}
-                  onCancel={() => setShowJoinForm(false)}
                   onSuccess={handleJoinSuccess}
                 />
               </CardContent>

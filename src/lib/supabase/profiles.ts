@@ -1,22 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
 
-export const updateProfile = async (userId: string, data: {
-  name?: string;
-  photo_url?: string;
-  // Add any other profile fields that can be updated
-}) => {
-  try {
-    const { error } = await supabase
-      .from('app_users')
-      .update(data)
-      .eq('id', userId);
-      
-    return { error };
-  } catch (err) {
-    console.error('Error updating profile:', err);
-    return { error: err };
-  }
-};
+import { supabase } from '@/integrations/supabase/client';
 
 export const getProfile = async (userId: string) => {
   try {
@@ -25,85 +8,82 @@ export const getProfile = async (userId: string) => {
       .select('*')
       .eq('id', userId)
       .single();
-      
-    return { data, error };
+    
+    if (error) {
+      console.error('Error fetching profile:', error);
+      return { data: null, error };
+    }
+    
+    return { data, error: null };
   } catch (err) {
     console.error('Error fetching profile:', err);
     return { data: null, error: err };
   }
 };
 
-export const uploadProfilePhoto = async (userId: string, file: File) => {
-  try {
-    const fileName = `profile-${userId}-${Date.now()}.jpg`;
-    
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('profiles')
-      .upload(fileName, file, {
-        contentType: file.type,
-        upsert: true,
-      });
-      
-    if (uploadError) {
-      console.error('Error uploading profile photo:', uploadError);
-      return { data: null, error: uploadError };
-    }
-    
-    const { data: publicUrlData } = supabase.storage
-      .from('profiles')
-      .getPublicUrl(fileName);
-      
-    const photoUrl = publicUrlData?.publicUrl;
-    
-    // Update user profile with new photo URL
-    const { error: updateError } = await supabase
-      .from('app_users')
-      .update({ photo_url: photoUrl })
-      .eq('id', userId);
-      
-    if (updateError) {
-      console.error('Error updating profile with new photo:', updateError);
-      return { data: null, error: updateError };
-    }
-    
-    return { data: { photo_url: photoUrl }, error: null };
-  } catch (err) {
-    console.error('Unexpected error uploading profile photo:', err);
-    return { data: null, error: err };
-  }
-};
-
-export const updateUserSettings = async (userId: string, settings: {
-  notification_preferences?: any;
-  privacy_settings?: any;
-  theme_preference?: string;
+export const updateProfile = async (userId: string, updates: {
+  name?: string;
+  photo_url?: string;
+  role?: string;
+  is_banned?: boolean;
 }) => {
   try {
     const { error } = await supabase
-      .from('user_settings')
-      .upsert({
-        user_id: userId,
-        ...settings
-      });
+      .from('app_users')
+      .update(updates)
+      .eq('id', userId);
       
-    return { error };
+    if (error) {
+      console.error('Error updating profile:', error);
+      return { error };
+    }
+    
+    return { error: null };
   } catch (err) {
-    console.error('Error updating user settings:', err);
+    console.error('Error updating profile:', err);
     return { error: err };
   }
 };
 
-export const getUserSettings = async (userId: string) => {
+export const uploadProfilePhoto = async (userId: string, file: File) => {
   try {
-    const { data, error } = await supabase
-      .from('user_settings')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}-${Date.now()}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, file, {
+        contentType: file.type,
+        upsert: true
+      });
       
-    return { data, error };
+    if (uploadError) {
+      console.error('Error uploading profile photo:', uploadError);
+      return { url: null, error: uploadError };
+    }
+    
+    const { data: urlData } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(fileName);
+      
+    if (!urlData?.publicUrl) {
+      return { url: null, error: { message: 'Could not get public URL for uploaded file' } };
+    }
+    
+    // Update user profile with new photo URL
+    const { error: updateError } = await supabase
+      .from('app_users')
+      .update({ photo_url: urlData.publicUrl })
+      .eq('id', userId);
+      
+    if (updateError) {
+      console.error('Error updating profile with new photo URL:', updateError);
+      return { url: urlData.publicUrl, error: updateError };
+    }
+    
+    return { url: urlData.publicUrl, error: null };
   } catch (err) {
-    console.error('Error fetching user settings:', err);
-    return { data: null, error: err };
+    console.error('Error uploading profile photo:', err);
+    return { url: null, error: err };
   }
 };
