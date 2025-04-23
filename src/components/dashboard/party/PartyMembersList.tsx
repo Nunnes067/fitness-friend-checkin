@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +5,7 @@ import { Users, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { getPartyMembers } from '@/lib/supabase';
+import { getPartyMembers, supabase } from '@/lib/supabase';
 
 interface PartyMembersListProps {
   partyId: string;

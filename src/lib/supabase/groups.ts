@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export const getUserGroups = async (userId: string) => {
@@ -217,9 +218,10 @@ export const getGroupMembers = async (groupId: string) => {
       return { data: null, error };
     }
     
+    // Use type assertion to handle the uncertain type structure
     const members = data.map(member => {
-      // Fix type issue by using a null check and providing default values
-      const user = member.app_users;
+      // Create a safe user object with default values
+      const user = member.app_users as any;
       return {
         id: member.id,
         is_admin: member.is_admin,

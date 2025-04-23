@@ -47,7 +47,8 @@ export const getPartyMembers = async (partyId: string) => {
     // Format the response to make it easier to work with
     // Fix type issues by using a null check and providing default values
     const members = data.map(member => {
-      const user = member.app_users;
+      // Use type assertion to handle the uncertain type structure
+      const user = member.app_users as any;
       return {
         id: member.id,
         joined_at: member.joined_at,
