@@ -218,18 +218,31 @@ export const getGroupMembers = async (groupId: string) => {
       return { data: null, error };
     }
     
-    const members = data.map(member => ({
-      id: member.id,
-      is_admin: member.is_admin,
-      joined_at: member.joined_at,
-      is_creator: false,
-      ...(member.app_users ? {
-        id: member.app_users.id,
-        name: member.app_users.name,
-        email: member.app_users.email,
-        photo_url: member.app_users.photo_url
-      } : {})
-    }));
+    const members = data.map(member => {
+      if (member.app_users) {
+        return {
+          id: member.id,
+          is_admin: member.is_admin,
+          joined_at: member.joined_at,
+          is_creator: false,
+          user_id: member.user_id,
+          name: member.app_users.name,
+          email: member.app_users.email,
+          photo_url: member.app_users.photo_url
+        };
+      } else {
+        return {
+          id: member.id,
+          is_admin: member.is_admin,
+          joined_at: member.joined_at,
+          is_creator: false,
+          user_id: member.user_id,
+          name: 'Unknown',
+          email: '',
+          photo_url: null
+        };
+      }
+    });
     
     return { data: members, error: null };
   } catch (err) {

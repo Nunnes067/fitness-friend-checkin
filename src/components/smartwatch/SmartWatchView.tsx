@@ -43,7 +43,8 @@ export function SmartWatchView({ userId, hasCheckedInToday, onCheckInSuccess }: 
     setIsCheckingIn(true);
     
     try {
-      const { error, alreadyCheckedIn } = await checkIn(userId);
+      // Pass null as the second argument since we're doing a smartwatch check-in without a photo
+      const { error, alreadyCheckedIn } = await checkIn(userId, null);
       
       if (error) {
         toast.error('Erro ao fazer check-in', {

@@ -1,56 +1,25 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { getCurrentUser, signOut } from '@/lib/supabase';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getCurrentUser, updateProfile } from '@/lib/supabase';
-import { AnimatedLogo } from '@/components/ui/AnimatedLogo';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { ChevronLeft, Save, User, Lock } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { supabase } from '@/lib/supabase';
-
-const passwordSchema = z.object({
-  password: z.string().min(6, {
-    message: "Password must be at least 6 characters.",
-  }),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+import { Edit, Check, Loader2, AlertTriangle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Profile = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [profile, setProfile] = useState({
-    username: '',
-    fullName: '',
-    bio: '',
-    avatarUrl: '',
-    name: '',
-  });
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   
-  const passwordForm = useForm<z.infer<typeof passwordSchema>>({
-    resolver: zodResolver(passwordSchema),
-    defaultValues: {
-      password: '',
-      confirmPassword: '',
-    },
-  });
-
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -62,31 +31,12 @@ const Profile = () => {
         }
         
         setUser(currentUser);
-        
-        // Fetch user profile from the app_users table
-        const { data: userData, error } = await updateProfile(currentUser.id, {});
-        
-        if (!error && userData) {
-          setProfile({
-            username: currentUser.email?.split('@')[0] || '',
-            fullName: userData?.name || '',
-            name: userData?.name || currentUser.email?.split('@')[0] || '',
-            bio: '',
-            avatarUrl: userData?.photo_url || '',
-          });
-        } else {
-          setProfile({
-            username: currentUser.email?.split('@')[0] || '',
-            fullName: '',
-            name: currentUser.email?.split('@')[0] || '',
-            bio: '',
-            avatarUrl: '',
-          });
-        }
+        setName(currentUser?.user_metadata?.name || '');
+        setPhotoUrl(currentUser?.user_metadata?.avatar_url || '');
       } catch (err) {
-        console.error('Auth check error:', err);
-        toast.error('Session expired', {
-          description: 'Please log in again',
+        console.error('Erro ao verificar autenticação:', err);
+        toast.error('Sessão expirada', {
+          description: 'Por favor, faça login novamente',
         });
         navigate('/');
       } finally {
@@ -97,257 +47,265 @@ const Profile = () => {
     checkAuth();
   }, [navigate]);
   
-  const handleSaveProfile = async () => {
-    setIsSaving(true);
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Erro ao fazer signout:', error);
+      toast.error('Erro ao fazer signout');
+    }
+  };
+  
+  const toggleEdit = () => {
+    setIsEditing(!isEditing);
+  };
+  
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setName(e.target.value);
+  };
+  
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    
+    if (file) {
+      setUploading(true);
+      
+      try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}.${fileExt}`;
+        const filePath = `avatars/${fileName}`;
+        
+        const { data, error } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+          
+        if (error) {
+          console.error('Erro ao fazer upload da foto:', error);
+          toast.error('Erro ao fazer upload da foto');
+        } else {
+          const publicUrl = supabase.storage
+            .from('avatars')
+            .getPublicUrl(filePath).data.publicUrl;
+            
+          setPhotoUrl(publicUrl);
+          toast.success('Foto de perfil atualizada com sucesso!');
+        }
+      } catch (err) {
+        console.error('Erro inesperado ao fazer upload da foto:', err);
+        toast.error('Erro inesperado ao fazer upload da foto');
+      } finally {
+        setUploading(false);
+      }
+    }
+  };
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
     
     try {
-      if (!user?.id) {
-        throw new Error('User ID not found');
-      }
-      
-      // Update profile in Supabase
-      const { error } = await updateProfile(user.id, {
-        name: profile.name,
-        photo_url: profile.avatarUrl,
+      const { data, error } = await supabase.auth.updateUser({
+        data: {
+          name: name,
+          avatar_url: photoUrl
+        }
       });
       
       if (error) {
-        throw error;
+        console.error('Erro ao atualizar perfil:', error);
+        toast.error('Erro ao atualizar perfil', {
+          description: error.message,
+        });
+        return;
       }
       
-      toast.success('Perfil atualizado', {
-        description: 'Suas informações foram atualizadas com sucesso.',
-      });
+      toast.success('Perfil atualizado com sucesso!');
+      setIsEditing(false);
     } catch (err) {
-      console.error('Update profile error:', err);
-      toast.error('Falha na atualização', {
-        description: 'Não foi possível atualizar o perfil. Tente novamente.',
-      });
+      console.error('Erro inesperado ao atualizar perfil:', err);
+      toast.error('Erro inesperado ao atualizar perfil');
     } finally {
-      setIsSaving(false);
+      setIsLoading(false);
     }
   };
 
-  const handlePasswordChange = async (data: z.infer<typeof passwordSchema>) => {
-    setIsChangingPassword(true);
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
     
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: data.password
+      const { error: deleteError } = await supabase.auth.deleteUser({
+        userId: user.id
       });
       
-      if (error) {
-        throw error;
+      if (deleteError && deleteError.error) {
+        toast.error('Erro ao excluir conta', {
+          description: deleteError.error.message || 'Não foi possível excluir a conta. Tente novamente mais tarde.'
+        });
+      } else {
+        toast.success('Conta excluída com sucesso!');
+        navigate('/');
       }
-      
-      toast.success('Senha atualizada', {
-        description: 'Sua senha foi atualizada com sucesso.',
-      });
-      
-      passwordForm.reset();
-    } catch (err: any) {
-      console.error('Password change error:', err);
-      toast.error('Falha na atualização da senha', {
-        description: err.message || 'Não foi possível atualizar a senha. Tente novamente.',
+    } catch (err) {
+      console.error('Erro ao excluir conta:', err);
+      toast.error('Erro ao excluir conta', {
+        description: 'Ocorreu um erro ao tentar excluir a conta. Tente novamente mais tarde.'
       });
     } finally {
-      setIsChangingPassword(false);
+      setDeleteLoading(false);
     }
   };
-  
-  const getInitials = (name: string) => {
-    const parts = name.split(' ');
-    if (parts.length === 1) return name.slice(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  };
-  
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse-light">Loading profile...</div>
+        <div className="animate-pulse-light">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/30">
-      <header className="glass border-b border-border/40 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto py-4 px-4 sm:px-6 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <AnimatedLogo size="sm" />
-            <h1 className="text-xl font-semibold tracking-tight">CheckMate</h1>
-          </div>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/dashboard')}
-          >
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
+    <DashboardLayout user={user}>
+      <div className="container mx-auto mt-8 max-w-md">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold">Meu Perfil</h1>
+          <Button variant="outline" size="sm" onClick={handleSignOut}>
+            Sair
           </Button>
         </div>
-      </header>
-      
-      <main className="container mx-auto py-8 px-4 sm:px-6 animate-fade-in">
-        <div className="max-w-2xl mx-auto">
-          <section className="mb-8 text-center">
-            <h1 className="text-3xl font-bold tracking-tight mb-2">Seu Perfil</h1>
-            <p className="text-muted-foreground">
-              Atualize suas informações pessoais
-            </p>
-          </section>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex items-center justify-center mb-4">
+            <Avatar className="h-24 w-24 border border-border">
+              {photoUrl ? (
+                <AvatarImage src={photoUrl} alt={name || 'Usuário'} />
+              ) : null}
+              <AvatarFallback>{name ? name[0].toUpperCase() : '?'}</AvatarFallback>
+            </Avatar>
+          </div>
           
-          <Card className="glass-card border border-border/40 mb-6">
-            <CardHeader>
-              <CardTitle>Informações do Perfil</CardTitle>
-              <CardDescription>
-                Como você aparece para outros membros
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
-                <Avatar className="h-24 w-24 border border-border">
-                  <AvatarImage src={profile.avatarUrl} alt={profile.username} />
-                  <AvatarFallback className="text-lg">
-                    {profile.name ? getInitials(profile.name) : <User />}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div className="flex-1 space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nome</Label>
-                    <Input
-                      id="name"
-                      value={profile.name}
-                      onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                      placeholder="Seu nome completo"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Este nome aparecerá na lista de check-ins
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="avatarUrl">URL da Foto</Label>
-                    <Input
-                      id="avatarUrl"
-                      value={profile.avatarUrl}
-                      onChange={(e) => setProfile({ ...profile, avatarUrl: e.target.value })}
-                      placeholder="https://example.com/foto.jpg"
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  rows={3}
-                  value={profile.bio}
-                  onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                  placeholder="Uma breve descrição sobre você (opcional)"
+          {isEditing ? (
+            <>
+              <div>
+                <Label htmlFor="name">Nome</Label>
+                <Input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={handleNameChange}
+                  disabled={isLoading}
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+              <div>
+                <Label htmlFor="photo">Foto de Perfil</Label>
                 <Input
-                  id="email"
+                  type="file"
+                  id="photo"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  disabled={uploading}
+                />
+                {uploading && (
+                  <div className="flex items-center mt-2 text-muted-foreground">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enviando...
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <Label>Nome</Label>
+                <Input
+                  type="text"
+                  value={name}
+                  readOnly
+                  disabled
+                />
+              </div>
+              
+              <div>
+                <Label>Email</Label>
+                <Input
                   type="email"
                   value={user.email}
+                  readOnly
                   disabled
-                  className="bg-muted"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Seu endereço de email não pode ser alterado
-                </p>
               </div>
-            </CardContent>
-            <CardFooter className="flex justify-end">
-              <Button onClick={handleSaveProfile} disabled={isSaving}>
-                <Save className="h-4 w-4 mr-2" />
-                {isSaving ? 'Salvando...' : 'Salvar Alterações'}
-              </Button>
-            </CardFooter>
-          </Card>
+            </>
+          )}
           
-          <Card className="glass-card border border-border/40">
-            <CardHeader>
-              <CardTitle>Segurança da Conta</CardTitle>
-              <CardDescription>
-                Atualize sua senha e configurações de segurança
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...passwordForm}>
-                <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)} className="space-y-4">
-                  <FormField
-                    control={passwordForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nova Senha</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="••••••••"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={passwordForm.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirmar Nova Senha</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="••••••••"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <Alert>
-                    <Lock className="h-4 w-4" />
-                    <AlertDescription>
-                      Sua senha deve ter pelo menos 6 caracteres. Use uma combinação de letras, números e símbolos para maior segurança.
-                    </AlertDescription>
-                  </Alert>
-                  
-                  <div className="pt-2">
-                    <Button 
-                      type="submit" 
-                      disabled={isChangingPassword}
-                      className="w-full"
-                    >
-                      {isChangingPassword ? 'Atualizando senha...' : 'Atualizar Senha'}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
+          <div className="flex justify-between">
+            {isEditing ? (
+              <>
+                <Button
+                  type="submit"
+                  disabled={isLoading || uploading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="mr-2 h-4 w-4" />
+                      Salvar
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={toggleEdit}
+                  disabled={isLoading || uploading}
+                >
+                  Cancelar
+                </Button>
+              </>
+            ) : (
+              <Button
+                type="button"
+                onClick={toggleEdit}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Editar Perfil
+              </Button>
+            )}
+          </div>
+        </form>
+        
+        <div className="mt-8 border-t pt-4">
+          <h2 className="text-lg font-semibold mb-4">Excluir Conta</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Esta ação é irreversível. Ao excluir sua conta, todos os seus dados serão permanentemente removidos.
+          </p>
+          <Button
+            variant="destructive"
+            onClick={handleDeleteAccount}
+            disabled={deleteLoading}
+          >
+            {deleteLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Excluindo...
+              </>
+            ) : (
+              <>
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Excluir Conta
+              </>
+            )}
+          </Button>
         </div>
-      </main>
-      
-      <footer className="border-t border-border/40 py-6 text-center text-sm text-muted-foreground mt-auto">
-        <div className="container mx-auto">
-          CheckMate - Seu companheiro diário da academia
-        </div>
-      </footer>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };
 

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export const getDailyHistory = async (date: string) => {
@@ -34,7 +33,7 @@ export const getDailyHistory = async (date: string) => {
   }
 };
 
-export const checkIn = async (userId: string, photoBase64: string | File) => {
+export const checkIn = async (userId: string, photoBase64: string | File | null) => {
   try {
     // Check if user already checked in today
     const today = new Date().toISOString().split('T')[0];
@@ -142,5 +141,68 @@ export const checkIn = async (userId: string, photoBase64: string | File) => {
   } catch (err) {
     console.error('Error in checkIn function:', err);
     return { data: null, error: err, alreadyCheckedIn: false };
+  }
+};
+
+// Add missing getTodayCheckins function
+export const getTodayCheckins = async () => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from('check_ins')
+      .select(`
+        id,
+        timestamp,
+        photo_url,
+        user_id,
+        app_users!inner (
+          id,
+          name,
+          email,
+          photo_url
+        )
+      `)
+      .eq('check_in_date', today)
+      .order('timestamp', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching today checkins:', error);
+      return { data: null, error };
+    }
+    
+    return { data, error: null };
+  } catch (err) {
+    console.error('Error in getTodayCheckins:', err);
+    return { data: null, error: err };
+  }
+};
+
+// Add missing getWeeklyRanking function
+export const getWeeklyRanking = async () => {
+  try {
+    // Get the start of the current week (Sunday)
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const startDate = new Date(now);
+    startDate.setDate(now.getDate() - dayOfWeek);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const startDateStr = startDate.toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .rpc('get_weekly_checkin_count', { 
+        start_date: startDateStr 
+      });
+    
+    if (error) {
+      console.error('Error fetching weekly ranking:', error);
+      return { data: null, error };
+    }
+    
+    return { data, error: null };
+  } catch (err) {
+    console.error('Error in getWeeklyRanking:', err);
+    return { data: null, error: err };
   }
 };
