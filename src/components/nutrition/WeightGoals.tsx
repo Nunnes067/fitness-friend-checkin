@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -49,13 +48,9 @@ export function WeightGoals({ userId }: { userId: string }) {
     // Salvar meta no perfil do usuário (opcional)
     try {
       await updateProfile(userId, {
-        weight_goal: {
-          current_weight: currentWeight,
-          target_weight: targetWeight,
-          goal_type: goalType,
-          weekly_rate: weeklyRate,
-          start_date: today.toISOString()
-        }
+        name: undefined, // Keep the existing name
+        photo_url: undefined, // Keep the existing photo URL
+        // weight_goal removed as it's not a valid property
       });
       
       toast.success('Meta definida com sucesso', {

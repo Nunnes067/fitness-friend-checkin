@@ -3,44 +3,59 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const getCurrentUser = async () => {
   try {
-    const { data, error } = await supabase.auth.getUser();
+    const { data: { user }, error } = await supabase.auth.getUser();
     
     if (error) {
-      console.error('Error fetching user:', error.message);
+      console.error('Error getting current user:', error);
       return { user: null, error };
     }
     
-    return { user: data?.user || null, error: null };
+    return { user, error: null };
   } catch (err) {
-    console.error('Unexpected error fetching user:', err);
+    console.error('Unexpected error in getCurrentUser:', err);
     return { user: null, error: err };
   }
 };
 
-export const signIn = async (email: string, password: string) => {
+export const signInWithEmail = async (email: string, password: string) => {
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
-      password,
+      password
     });
     
-    return { data, error };
+    if (error) {
+      console.error('Error signing in with email:', error);
+      return { data: null, error };
+    }
+    
+    return { data, error: null };
   } catch (err) {
-    console.error('Unexpected error during sign in:', err);
+    console.error('Unexpected error in signInWithEmail:', err);
     return { data: null, error: err };
   }
 };
 
-export const signUp = async (email: string, password: string) => {
+export const signUpWithEmail = async (email: string, password: string, name: string) => {
   try {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          name
+        }
+      }
     });
     
-    return { data, error };
+    if (error) {
+      console.error('Error signing up with email:', error);
+      return { data: null, error };
+    }
+    
+    return { data, error: null };
   } catch (err) {
-    console.error('Unexpected error during sign up:', err);
+    console.error('Unexpected error in signUpWithEmail:', err);
     return { data: null, error: err };
   }
 };
@@ -48,20 +63,15 @@ export const signUp = async (email: string, password: string) => {
 export const signOut = async () => {
   try {
     const { error } = await supabase.auth.signOut();
-    return { error };
+    
+    if (error) {
+      console.error('Error signing out:', error);
+      return { error };
+    }
+    
+    return { error: null };
   } catch (err) {
-    console.error('Unexpected error during sign out:', err);
-    return { error: err };
-  }
-};
-
-export const resetPassword = async (email: string, redirectTo?: string) => {
-  try {
-    const options = redirectTo ? { redirectTo } : undefined;
-    const { error } = await supabase.auth.resetPasswordForEmail(email, options);
-    return { error };
-  } catch (err) {
-    console.error('Unexpected error during password reset:', err);
+    console.error('Unexpected error in signOut:', err);
     return { error: err };
   }
 };

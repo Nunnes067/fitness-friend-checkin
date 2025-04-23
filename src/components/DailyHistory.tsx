@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -40,7 +39,9 @@ export function DailyHistory() {
     const fetchHistory = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await getDailyHistory(selectedDate);
+        // Format the date to ISO string format YYYY-MM-DD
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        const { data, error } = await getDailyHistory(dateStr);
         
         if (error) {
           console.error('Erro ao buscar histórico:', error);

@@ -64,15 +64,25 @@ const Profile = () => {
         setUser(currentUser);
         
         // Fetch user profile from the app_users table
-        const { data: userData } = await updateProfile(currentUser.id, {});
+        const { data: userData, error } = await updateProfile(currentUser.id, {});
         
-        setProfile({
-          username: currentUser.email?.split('@')[0] || '',
-          fullName: userData?.name || '',
-          name: userData?.name || currentUser.email?.split('@')[0] || '',
-          bio: '',
-          avatarUrl: userData?.photo_url || '',
-        });
+        if (!error && userData) {
+          setProfile({
+            username: currentUser.email?.split('@')[0] || '',
+            fullName: userData?.name || '',
+            name: userData?.name || currentUser.email?.split('@')[0] || '',
+            bio: '',
+            avatarUrl: userData?.photo_url || '',
+          });
+        } else {
+          setProfile({
+            username: currentUser.email?.split('@')[0] || '',
+            fullName: '',
+            name: currentUser.email?.split('@')[0] || '',
+            bio: '',
+            avatarUrl: '',
+          });
+        }
       } catch (err) {
         console.error('Auth check error:', err);
         toast.error('Session expired', {

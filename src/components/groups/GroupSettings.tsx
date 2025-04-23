@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,13 +27,13 @@ export function GroupSettings({ groupId, userId }: GroupSettingsProps) {
   useEffect(() => {
     const fetchGroupDetails = async () => {
       try {
-        const { data, error } = await getGroupDetails(groupId);
+        const { data, error } = await getGroupDetails(groupId, userId);
         
         if (error) throw error;
         
         setGroup(data);
-        setName(data.name || '');
-        setDescription(data.description || '');
+        setName(data?.name || '');
+        setDescription(data?.description || '');
       } catch (error) {
         console.error('Error fetching group details:', error);
         toast.error('Erro ao carregar detalhes do grupo');
@@ -44,7 +43,7 @@ export function GroupSettings({ groupId, userId }: GroupSettingsProps) {
     };
     
     fetchGroupDetails();
-  }, [groupId]);
+  }, [groupId, userId]);
   
   const handleSaveChanges = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +63,9 @@ export function GroupSettings({ groupId, userId }: GroupSettingsProps) {
       
       if (error) throw error;
       
-      setGroup(data);
+      if (data) {
+        setGroup({...group, ...data});
+      }
       toast.success('Grupo atualizado com sucesso!');
     } catch (error: any) {
       console.error('Error updating group:', error);

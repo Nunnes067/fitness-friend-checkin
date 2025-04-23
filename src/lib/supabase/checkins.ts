@@ -1,212 +1,146 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export const checkIn = async (userId: string, photoFile?: File) => {
+export const getDailyHistory = async (date: string) => {
   try {
-    const now = new Date();
-    const checkInDate = now.toISOString().split('T')[0];
-    
-    // Check if user already checked in today
-    const { data: existingCheckIn, error: checkError } = await supabase
-      .from('check_ins')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('check_in_date', checkInDate)
-      .maybeSingle();
-      
-    if (checkError) {
-      console.error('Error checking existing check-in:', checkError);
-      return { data: null, error: checkError };
-    }
-    
-    if (existingCheckIn) {
-      return { 
-        data: null, 
-        error: { message: 'Você já fez check-in hoje' },
-        alreadyCheckedIn: true
-      };
-    }
-    
-    let photoUrl = null;
-    
-    // Upload photo if provided
-    if (photoFile) {
-      const fileExt = photoFile.name.split('.').pop();
-      const fileName = `${userId}-${Date.now()}.${fileExt}`;
-      
-      const { error: uploadError, data: uploadData } = await supabase.storage
-        .from('check-ins')
-        .upload(fileName, photoFile);
-        
-      if (uploadError) {
-        console.error('Error uploading check-in photo:', uploadError);
-        // Continue with check-in even if photo upload fails
-      } else {
-        const { data: urlData } = supabase.storage
-          .from('check-ins')
-          .getPublicUrl(fileName);
-          
-        photoUrl = urlData.publicUrl;
-      }
-    }
-    
-    // Create check-in record
-    const { data: checkInData, error: insertError } = await supabase
-      .from('check_ins')
-      .insert({
-        user_id: userId,
-        check_in_date: checkInDate,
-        timestamp: now.toISOString(),
-        photo_url: photoUrl
-      })
-      .select()
-      .single();
-      
-    if (insertError) {
-      console.error('Error creating check-in:', insertError);
-      return { data: null, error: insertError };
-    }
-    
-    // Update user streak in app_users table
-    const { data: userData, error: userError } = await supabase
-      .from('app_users')
-      .select('streak, last_check_in')
-      .eq('id', userId)
-      .single();
-      
-    if (userError) {
-      console.error('Error fetching user data:', userError);
-      // Continue even if we can't get user data
-    } else {
-      let newStreak = 1;
-      
-      // If user has a previous check-in, calculate streak
-      if (userData.last_check_in) {
-        const lastCheckIn = new Date(userData.last_check_in);
-        const yesterday = new Date(now);
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        // If last check-in was yesterday, increment streak
-        if (lastCheckIn.toISOString().split('T')[0] === yesterday.toISOString().split('T')[0]) {
-          newStreak = (userData.streak || 0) + 1;
-        }
-      }
-      
-      const { error: updateError } = await supabase
-        .from('app_users')
-        .update({
-          streak: newStreak,
-          last_check_in: checkInDate
-        })
-        .eq('id', userId);
-        
-      if (updateError) {
-        console.error('Error updating user streak:', updateError);
-      }
-    }
-    
-    return { data: checkInData, error: null };
-  } catch (err) {
-    console.error('Error during check-in:', err);
-    return { data: null, error: err };
-  }
-};
-
-export const getDailyHistory = async (userId: string, days: number = 30) => {
-  try {
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    const formattedDate = typeof date === 'object' ? 
+      (date as Date).toISOString().split('T')[0] : 
+      date;
     
     const { data, error } = await supabase
-      .from('check_ins')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('check_in_date', startDate.toISOString().split('T')[0])
-      .lte('check_in_date', endDate.toISOString().split('T')[0])
-      .order('check_in_date', { ascending: false });
-      
+      .from('app_users')
+      .select(`
+        id,
+        name,
+        email,
+        photo_url,
+        check_ins:check_ins (
+          id,
+          timestamp,
+          photo_url
+        )
+      `)
+      .eq('check_ins.check_in_date', formattedDate);
+    
     if (error) {
-      console.error('Error fetching check-in history:', error);
+      console.error('Error fetching daily history:', error);
       return { data: null, error };
     }
     
     return { data, error: null };
   } catch (err) {
-    console.error('Error fetching check-in history:', err);
+    console.error('Error fetching daily history:', err);
     return { data: null, error: err };
   }
 };
 
-export const getWeeklyRanking = async (startDate?: Date) => {
+export const checkIn = async (userId: string, photoBase64: string | File) => {
   try {
-    if (!startDate) {
-      // Default to beginning of current week
-      startDate = new Date();
-      const day = startDate.getDay() || 7; // Convert Sunday (0) to 7
-      const diff = startDate.getDate() - day + 1; // Adjust to Monday
-      startDate = new Date(startDate.setDate(diff));
-      startDate.setHours(0, 0, 0, 0);
-    }
-    
-    const { data, error } = await supabase.rpc(
-      'get_users_with_seven_or_more_checkins',
-      { start_date: startDate.toISOString().split('T')[0] }
-    );
-    
-    if (error) {
-      console.error('Error fetching weekly ranking:', error);
-      return { data: null, error };
-    }
-    
-    // Sort users by check-in count (descending)
-    const sortedData = data ? [...data].sort((a, b) => b.count - a.count) : [];
-    
-    return { data: sortedData, error: null };
-  } catch (err) {
-    console.error('Error fetching weekly ranking:', err);
-    return { data: null, error: err };
-  }
-};
-
-export const getTodayCheckins = async () => {
-  try {
+    // Check if user already checked in today
     const today = new Date().toISOString().split('T')[0];
     
-    const { data, error } = await supabase
+    const { data: existingCheckIn } = await supabase
       .from('check_ins')
-      .select(`
-        id,
-        check_in_date,
-        timestamp,
-        photo_url,
-        app_users:user_id (
-          id,
-          name,
-          email,
-          photo_url,
-          streak
-        )
-      `)
+      .select('id')
+      .eq('user_id', userId)
       .eq('check_in_date', today)
-      .order('timestamp', { ascending: false });
+      .maybeSingle();
       
-    if (error) {
-      console.error('Error fetching today\'s check-ins:', error);
-      return { data: null, error };
+    if (existingCheckIn) {
+      return { data: null, error: null, alreadyCheckedIn: true };
     }
     
-    const formattedData = data.map(checkin => ({
-      id: checkin.id,
-      check_in_date: checkin.check_in_date,
-      timestamp: checkin.timestamp,
-      photo_url: checkin.photo_url,
-      user: checkin.app_users
-    }));
+    let photoUrl = null;
     
-    return { data: formattedData, error: null };
+    if (photoBase64) {
+      // If photoBase64 is a string (base64), process it
+      if (typeof photoBase64 === 'string') {
+        // Convert base64 to blob
+        const base64Response = await fetch(photoBase64);
+        const blob = await base64Response.blob();
+        
+        // Create a File object from the blob
+        const file = new File([blob], `check-in-${userId}-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        
+        // Upload the photo
+        const fileName = `check-in/${userId}/${Date.now()}.jpg`;
+        
+        const { error: uploadError, data } = await supabase.storage
+          .from('check-ins')
+          .upload(fileName, file, {
+            contentType: 'image/jpeg',
+            upsert: true
+          });
+          
+        if (uploadError) {
+          console.error('Error uploading check-in photo:', uploadError);
+          // Continue without the photo if upload fails
+        } else {
+          const { data } = supabase.storage
+            .from('check-ins')
+            .getPublicUrl(fileName);
+            
+          photoUrl = data.publicUrl;
+        }
+      } else {
+        // If photoBase64 is a File object, use it directly
+        const fileName = `check-in/${userId}/${Date.now()}.jpg`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('check-ins')
+          .upload(fileName, photoBase64, {
+            contentType: 'image/jpeg',
+            upsert: true
+          });
+          
+        if (uploadError) {
+          console.error('Error uploading check-in photo:', uploadError);
+        } else {
+          const { data } = supabase.storage
+            .from('check-ins')
+            .getPublicUrl(fileName);
+            
+          photoUrl = data.publicUrl;
+        }
+      }
+    }
+    
+    // Insert check-in record
+    const { data, error } = await supabase
+      .from('check_ins')
+      .insert({
+        user_id: userId,
+        check_in_date: today,
+        photo_url: photoUrl
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating check-in:', error);
+      return { data: null, error, alreadyCheckedIn: false };
+    }
+    
+    // Update user streak
+    const { data: userData, error: userError } = await supabase
+      .from('app_users')
+      .select('streak')
+      .eq('id', userId)
+      .single();
+      
+    if (!userError) {
+      await supabase
+        .from('app_users')
+        .update({
+          last_check_in: new Date().toISOString(),
+          streak: (userData?.streak || 0) + 1
+        })
+        .eq('id', userId);
+    }
+    
+    return { data, error: null, alreadyCheckedIn: false };
   } catch (err) {
-    console.error('Error fetching today\'s check-ins:', err);
-    return { data: null, error: err };
+    console.error('Error in checkIn function:', err);
+    return { data: null, error: err, alreadyCheckedIn: false };
   }
 };

@@ -223,7 +223,12 @@ export const getGroupMembers = async (groupId: string) => {
       is_admin: member.is_admin,
       joined_at: member.joined_at,
       is_creator: false,
-      ...(member.app_users || {})
+      ...(member.app_users ? {
+        id: member.app_users.id,
+        name: member.app_users.name,
+        email: member.app_users.email,
+        photo_url: member.app_users.photo_url
+      } : {})
     }));
     
     return { data: members, error: null };
@@ -353,7 +358,7 @@ export const leaveGroup = async (userId: string, groupId: string) => {
   }
 };
 
-export const getGroupDetails = async (groupId: string, userId: string) => {
+export const getGroupDetails = async (groupId: string, userId?: string) => {
   try {
     const { data, error } = await supabase
       .from('training_groups')
@@ -367,21 +372,24 @@ export const getGroupDetails = async (groupId: string, userId: string) => {
     }
     
     // Check if user is creator
-    const isCreator = data.creator_id === userId;
+    const isCreator = userId ? data.creator_id === userId : false;
     
-    // Check if user is admin
-    const { data: membership, error: membershipError } = await supabase
-      .from('group_members')
-      .select('is_admin')
-      .eq('user_id', userId)
-      .eq('group_id', groupId)
-      .single();
-      
-    if (membershipError && membershipError.code !== 'PGRST116') {
-      console.error('Error checking user membership:', membershipError);
+    // Check if user is admin (if userId is provided)
+    let isAdmin = false;
+    if (userId) {
+      const { data: membership, error: membershipError } = await supabase
+        .from('group_members')
+        .select('is_admin')
+        .eq('user_id', userId)
+        .eq('group_id', groupId)
+        .single();
+        
+      if (membershipError && membershipError.code !== 'PGRST116') {
+        console.error('Error checking user membership:', membershipError);
+      } else if (!membershipError) {
+        isAdmin = membership?.is_admin || false;
+      }
     }
-    
-    const isAdmin = membership?.is_admin || false;
     
     return { 
       data: {
@@ -399,15 +407,20 @@ export const getGroupDetails = async (groupId: string, userId: string) => {
 
 export const updateGroup = async (groupId: string, data: { name?: string; description?: string; is_active?: boolean }) => {
   try {
-    const { error } = await supabase
+    const { data: updatedData, error } = await supabase
       .from('training_groups')
       .update(data)
-      .eq('id', groupId);
+      .eq('id', groupId)
+      .select();
       
-    return { error };
+    if (error) {
+      return { data: null, error };
+    }
+    
+    return { data: updatedData[0], error: null };
   } catch (err) {
     console.error('Error updating group:', err);
-    return { error: err };
+    return { data: null, error: err };
   }
 };
 
@@ -430,7 +443,7 @@ export const generateNewInviteCode = async (groupId: string) => {
       return { data: null, error: updateError };
     }
     
-    return { data: code, error: null };
+    return { data: { invite_code: code }, error: null };
   } catch (err) {
     console.error('Unexpected error generating new invite code:', err);
     return { data: null, error: err };
