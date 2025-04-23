@@ -337,3 +337,148 @@ export const likeGroupPost = async (postId: string, userId: string) => {
     return { data: null, error: err };
   }
 };
+
+export const leaveGroup = async (userId: string, groupId: string) => {
+  try {
+    const { error } = await supabase
+      .from('group_members')
+      .delete()
+      .eq('user_id', userId)
+      .eq('group_id', groupId);
+      
+    return { error };
+  } catch (err) {
+    console.error('Error leaving group:', err);
+    return { error: err };
+  }
+};
+
+export const getGroupDetails = async (groupId: string, userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('training_groups')
+      .select('*')
+      .eq('id', groupId)
+      .single();
+      
+    if (error) {
+      console.error('Error fetching group details:', error);
+      return { data: null, error };
+    }
+    
+    // Check if user is creator
+    const isCreator = data.creator_id === userId;
+    
+    // Check if user is admin
+    const { data: membership, error: membershipError } = await supabase
+      .from('group_members')
+      .select('is_admin')
+      .eq('user_id', userId)
+      .eq('group_id', groupId)
+      .single();
+      
+    if (membershipError && membershipError.code !== 'PGRST116') {
+      console.error('Error checking user membership:', membershipError);
+    }
+    
+    const isAdmin = membership?.is_admin || false;
+    
+    return { 
+      data: {
+        ...data,
+        is_creator: isCreator,
+        is_admin: isAdmin
+      }, 
+      error: null 
+    };
+  } catch (err) {
+    console.error('Unexpected error fetching group details:', err);
+    return { data: null, error: err };
+  }
+};
+
+export const updateGroup = async (groupId: string, data: { name?: string; description?: string; is_active?: boolean }) => {
+  try {
+    const { error } = await supabase
+      .from('training_groups')
+      .update(data)
+      .eq('id', groupId);
+      
+    return { error };
+  } catch (err) {
+    console.error('Error updating group:', err);
+    return { error: err };
+  }
+};
+
+export const generateNewInviteCode = async (groupId: string) => {
+  try {
+    const { data: code, error: codeError } = await supabase.rpc('generate_group_code');
+    
+    if (codeError) {
+      console.error('Error generating new invite code:', codeError);
+      return { data: null, error: codeError };
+    }
+    
+    const { error: updateError } = await supabase
+      .from('training_groups')
+      .update({ invite_code: code })
+      .eq('id', groupId);
+      
+    if (updateError) {
+      console.error('Error updating invite code:', updateError);
+      return { data: null, error: updateError };
+    }
+    
+    return { data: code, error: null };
+  } catch (err) {
+    console.error('Unexpected error generating new invite code:', err);
+    return { data: null, error: err };
+  }
+};
+
+export const deleteGroup = async (groupId: string) => {
+  try {
+    // Delete group members first
+    const { error: membersError } = await supabase
+      .from('group_members')
+      .delete()
+      .eq('group_id', groupId);
+      
+    if (membersError) {
+      console.error('Error deleting group members:', membersError);
+      return { error: membersError };
+    }
+    
+    // Then delete group
+    const { error } = await supabase
+      .from('training_groups')
+      .delete()
+      .eq('id', groupId);
+      
+    return { error };
+  } catch (err) {
+    console.error('Error deleting group:', err);
+    return { error: err };
+  }
+};
+
+export const getUserRole = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('app_users')
+      .select('role')
+      .eq('id', userId)
+      .single();
+      
+    if (error) {
+      console.error('Error fetching user role:', error);
+      return { role: 'user', error };
+    }
+    
+    return { role: data?.role || 'user', error: null };
+  } catch (err) {
+    console.error('Unexpected error fetching user role:', err);
+    return { role: 'user', error: err };
+  }
+};

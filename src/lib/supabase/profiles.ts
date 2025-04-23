@@ -1,53 +1,109 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
-export const updateProfile = async (userId: string, updates: any) => {
+export const updateProfile = async (userId: string, data: {
+  name?: string;
+  photo_url?: string;
+  // Add any other profile fields that can be updated
+}) => {
   try {
-    const { data: existingProfile, error: fetchError } = await supabase
+    const { error } = await supabase
       .from('app_users')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      console.error('Error fetching profile:', fetchError);
-      return { data: null, error: fetchError };
-    }
-    
-    if (Object.keys(updates).length === 0) {
-      return { data: existingProfile, error: null };
-    }
-    
+      .update(data)
+      .eq('id', userId);
+      
+    return { error };
+  } catch (err) {
+    console.error('Error updating profile:', err);
+    return { error: err };
+  }
+};
+
+export const getProfile = async (userId: string) => {
+  try {
     const { data, error } = await supabase
       .from('app_users')
-      .update(updates)
-      .eq('id', userId)
       .select('*')
+      .eq('id', userId)
       .single();
-    
+      
     return { data, error };
   } catch (err) {
-    console.error('Unexpected error updating profile:', err);
+    console.error('Error fetching profile:', err);
     return { data: null, error: err };
   }
 };
 
-export const getUserRole = async (userId: string) => {
+export const uploadProfilePhoto = async (userId: string, file: File) => {
   try {
-    const { data, error } = await supabase
-      .from('app_users')
-      .select('role')
-      .eq('id', userId)
-      .single();
+    const fileName = `profile-${userId}-${Date.now()}.jpg`;
     
-    if (error) {
-      console.error('Error fetching user role:', error);
-      return { role: 'user', error };
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('profiles')
+      .upload(fileName, file, {
+        contentType: file.type,
+        upsert: true,
+      });
+      
+    if (uploadError) {
+      console.error('Error uploading profile photo:', uploadError);
+      return { data: null, error: uploadError };
     }
     
-    return { role: data?.role || 'user', error: null };
+    const { data: publicUrlData } = supabase.storage
+      .from('profiles')
+      .getPublicUrl(fileName);
+      
+    const photoUrl = publicUrlData?.publicUrl;
+    
+    // Update user profile with new photo URL
+    const { error: updateError } = await supabase
+      .from('app_users')
+      .update({ photo_url: photoUrl })
+      .eq('id', userId);
+      
+    if (updateError) {
+      console.error('Error updating profile with new photo:', updateError);
+      return { data: null, error: updateError };
+    }
+    
+    return { data: { photo_url: photoUrl }, error: null };
   } catch (err) {
-    console.error('Unexpected error fetching user role:', err);
-    return { role: 'user', error: err };
+    console.error('Unexpected error uploading profile photo:', err);
+    return { data: null, error: err };
+  }
+};
+
+export const updateUserSettings = async (userId: string, settings: {
+  notification_preferences?: any;
+  privacy_settings?: any;
+  theme_preference?: string;
+}) => {
+  try {
+    const { error } = await supabase
+      .from('user_settings')
+      .upsert({
+        user_id: userId,
+        ...settings
+      });
+      
+    return { error };
+  } catch (err) {
+    console.error('Error updating user settings:', err);
+    return { error: err };
+  }
+};
+
+export const getUserSettings = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_settings')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+      
+    return { data, error };
+  } catch (err) {
+    console.error('Error fetching user settings:', err);
+    return { data: null, error: err };
   }
 };
