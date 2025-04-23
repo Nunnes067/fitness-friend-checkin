@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,7 @@ import {
   getGroupMembers, 
   createGroupPost, 
   likeGroupPost 
-} from '@/lib/supabase/groups'; // Updated import path
+} from '@/lib/supabase/groups'; // Direct import from the groups module
 
 interface GroupFeedProps {
   groupId: string;
