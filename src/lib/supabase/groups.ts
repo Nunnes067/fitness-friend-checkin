@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export const getUserGroups = async (userId: string) => {
@@ -219,29 +218,18 @@ export const getGroupMembers = async (groupId: string) => {
     }
     
     const members = data.map(member => {
-      if (member.app_users) {
-        return {
-          id: member.id,
-          is_admin: member.is_admin,
-          joined_at: member.joined_at,
-          is_creator: false,
-          user_id: member.user_id,
-          name: member.app_users.name,
-          email: member.app_users.email,
-          photo_url: member.app_users.photo_url
-        };
-      } else {
-        return {
-          id: member.id,
-          is_admin: member.is_admin,
-          joined_at: member.joined_at,
-          is_creator: false,
-          user_id: member.user_id,
-          name: 'Unknown',
-          email: '',
-          photo_url: null
-        };
-      }
+      // Fix type issue by using a null check and providing default values
+      const user = member.app_users;
+      return {
+        id: member.id,
+        is_admin: member.is_admin,
+        joined_at: member.joined_at,
+        is_creator: false,
+        user_id: member.user_id,
+        name: user ? user.name : 'Unknown',
+        email: user ? user.email : '',
+        photo_url: user ? user.photo_url : null
+      };
     });
     
     return { data: members, error: null };

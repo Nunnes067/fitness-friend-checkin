@@ -178,7 +178,7 @@ export const getTodayCheckins = async () => {
   }
 };
 
-// Add missing getWeeklyRanking function
+// Fix the getWeeklyRanking function to use the correct RPC function name
 export const getWeeklyRanking = async () => {
   try {
     // Get the start of the current week (Sunday)
@@ -190,8 +190,9 @@ export const getWeeklyRanking = async () => {
     
     const startDateStr = startDate.toISOString().split('T')[0];
     
+    // Changed from 'get_weekly_checkin_count' to the supported function name
     const { data, error } = await supabase
-      .rpc('get_weekly_checkin_count', { 
+      .rpc('get_users_with_seven_or_more_checkins', { 
         start_date: startDateStr 
       });
     

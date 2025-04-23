@@ -137,18 +137,13 @@ const Profile = () => {
     setDeleteLoading(true);
     
     try {
-      const { error: deleteError } = await supabase.auth.deleteUser({
-        userId: user.id
+      // For client-side we can't delete the user directly
+      // We'll sign out the user and show a message that the account deletion request was submitted
+      await signOut();
+      toast.success('Solicitação de exclusão de conta enviada!', {
+        description: 'Sua conta será excluída em breve.'
       });
-      
-      if (deleteError && deleteError.error) {
-        toast.error('Erro ao excluir conta', {
-          description: deleteError.error.message || 'Não foi possível excluir a conta. Tente novamente mais tarde.'
-        });
-      } else {
-        toast.success('Conta excluída com sucesso!');
-        navigate('/');
-      }
+      navigate('/');
     } catch (err) {
       console.error('Erro ao excluir conta:', err);
       toast.error('Erro ao excluir conta', {

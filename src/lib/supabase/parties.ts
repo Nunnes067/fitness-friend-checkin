@@ -45,16 +45,17 @@ export const getPartyMembers = async (partyId: string) => {
     }
     
     // Format the response to make it easier to work with
+    // Fix type issues by using a null check and providing default values
     const members = data.map(member => {
       const user = member.app_users;
       return {
         id: member.id,
         joined_at: member.joined_at,
         user_id: member.user_id,
-        name: user?.name || 'Unknown',
-        email: user?.email || '',
-        photo_url: user?.photo_url || '',
-        streak: user?.streak || 0
+        name: user ? user.name : 'Unknown',
+        email: user ? user.email : '',
+        photo_url: user ? user.photo_url : '',
+        streak: user ? user.streak : 0
       };
     });
     
