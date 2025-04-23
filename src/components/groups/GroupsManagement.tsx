@@ -116,7 +116,6 @@ export function GroupsManagement({ userId }: GroupsManagementProps) {
               <CardContent>
                 <CreateGroupForm 
                   userId={userId}
-                  onSuccess={handleCreateSuccess}
                 />
               </CardContent>
             </Card>
@@ -131,7 +130,6 @@ export function GroupsManagement({ userId }: GroupsManagementProps) {
               <CardContent>
                 <JoinGroupForm 
                   userId={userId}
-                  onSuccess={handleJoinSuccess}
                 />
               </CardContent>
             </Card>

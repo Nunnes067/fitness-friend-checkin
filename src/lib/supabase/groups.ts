@@ -223,7 +223,7 @@ export const getGroupMembers = async (groupId: string) => {
       is_admin: member.is_admin,
       joined_at: member.joined_at,
       is_creator: false,
-      ...member.app_users
+      ...(member.app_users || {})
     }));
     
     return { data: members, error: null };
