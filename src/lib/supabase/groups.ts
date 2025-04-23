@@ -194,6 +194,45 @@ export const getGroupFeed = async (groupId: string) => {
   }
 };
 
+export const getGroupMembers = async (groupId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('group_members')
+      .select(`
+        id,
+        is_admin,
+        joined_at,
+        user_id,
+        app_users:user_id (
+          id,
+          name,
+          email,
+          photo_url
+        )
+      `)
+      .eq('group_id', groupId)
+      .order('joined_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching group members:', error);
+      return { data: null, error };
+    }
+    
+    const members = data.map(member => ({
+      id: member.id,
+      is_admin: member.is_admin,
+      joined_at: member.joined_at,
+      is_creator: false, // We'll set this below if needed
+      ...member.app_users
+    }));
+    
+    return { data: members, error: null };
+  } catch (err) {
+    console.error('Error fetching group members:', err);
+    return { data: null, error: err };
+  }
+};
+
 export const createGroupPost = async ({ 
   groupId, 
   userId, 
