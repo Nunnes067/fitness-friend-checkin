@@ -964,3 +964,21 @@ export const createGroup = async ({ name, description, creatorId }: { name: stri
     return { data: null, error: err };
   }
 };
+
+// New functions for group feed and posts
+export const getGroupFeed = async (groupId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('group_posts')
+      .select(`
+        id,
+        content,
+        image_url,
+        created_at,
+        user_id,
+        group_id,
+        user:user_id (
+          id,
+          name,
+          photo_url
+        ),
