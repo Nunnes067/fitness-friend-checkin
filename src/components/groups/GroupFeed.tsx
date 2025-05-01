@@ -62,16 +62,37 @@ export default function GroupFeed({ groupId, userId }: GroupFeedProps) {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <p className="text-muted-foreground text-center mb-4">
-            Feed temporariamente desativado para manutenção.
-          </p>
-          <Button variant="outline" onClick={() => window.location.reload()}>
-            Tentar novamente
-          </Button>
-        </CardContent>
-      </Card>
+      {posts.map((post) => (
+        <Card key={post.id} className="overflow-hidden">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              {post.user?.photo_url && (
+                <img 
+                  src={post.user.photo_url} 
+                  alt={post.user.name} 
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              )}
+              <div>
+                <p className="font-medium">{post.user?.name || 'Usuário'}</p>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(post.created_at).toLocaleDateString('pt-BR')}
+                </p>
+              </div>
+            </div>
+            
+            {post.content && <p className="mb-4">{post.content}</p>}
+            
+            {post.image_url && (
+              <img 
+                src={post.image_url} 
+                alt="Imagem do post" 
+                className="w-full h-auto rounded-md mb-4 max-h-96 object-contain"
+              />
+            )}
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
