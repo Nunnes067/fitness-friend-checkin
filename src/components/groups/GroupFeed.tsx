@@ -13,10 +13,18 @@ interface GroupFeedProps {
 
 export default function GroupFeed({ groupId, userId }: GroupFeedProps) {
   const [isLoading, setIsLoading] = useState(true);
+  const [posts, setPosts] = useState<any[]>([]);
 
   useEffect(() => {
     const loadInitialData = async () => {
       try {
+        const { data, error } = await getGroupFeed(groupId);
+        
+        if (error) {
+          throw error;
+        }
+        
+        setPosts(data || []);
         setIsLoading(false);
       } catch (err) {
         console.error('Error loading group feed:', err);
@@ -34,6 +42,20 @@ export default function GroupFeed({ groupId, userId }: GroupFeedProps) {
     return (
       <div className="flex justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  
+  if (posts.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <p className="text-muted-foreground text-center mb-4">
+              Nenhuma publicação neste grupo ainda. Seja o primeiro a compartilhar algo!
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
