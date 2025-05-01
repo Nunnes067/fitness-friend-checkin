@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getGroupFeed } from '@/lib/supabase/groups'; // Fix import path by removing createGroupPost
+import { getGroupFeed } from '@/lib/supabase/groups';
 
 interface GroupFeedProps {
   groupId: string;
