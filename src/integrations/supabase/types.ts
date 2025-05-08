@@ -49,6 +49,7 @@ export type Database = {
         Row: {
           check_in_date: string
           count_in_ranking: boolean
+          group_id: string | null
           id: string
           photo_url: string | null
           timestamp: string
@@ -57,6 +58,7 @@ export type Database = {
         Insert: {
           check_in_date?: string
           count_in_ranking?: boolean
+          group_id?: string | null
           id?: string
           photo_url?: string | null
           timestamp?: string
@@ -65,12 +67,20 @@ export type Database = {
         Update: {
           check_in_date?: string
           count_in_ranking?: boolean
+          group_id?: string | null
           id?: string
           photo_url?: string | null
           timestamp?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "check_ins_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "training_groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "check_ins_user_id_fkey"
             columns: ["user_id"]
@@ -358,6 +368,10 @@ export type Database = {
           photo_url: string
           count: number
         }[]
+      }
+      has_checked_in_today: {
+        Args: { p_user_id: string; p_group_id: string }
+        Returns: boolean
       }
       is_admin: {
         Args: { user_id: string }

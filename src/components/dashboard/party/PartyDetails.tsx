@@ -1,7 +1,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, Hash, LogOut, CheckSquare, Copy, Share2, X } from 'lucide-react';
+import { Users, Hash, LogOut, CheckSquare, Copy, Share2, X, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PartyMembersList } from './PartyMembersList';
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Camera } from 'lucide-react';
 import { PartyPopper } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface PartyDetailsProps {
   currentParty: any;
@@ -198,6 +199,18 @@ export function PartyDetails({
           )}
         </Button>
       </div>
+      
+      <Alert className="mb-6">
+        <AlertDescription className="text-center text-sm">
+          <p className="mb-2">Novo! Agora você pode criar grupos permanentes para check-ins!</p>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/groups" className="flex items-center gap-1">
+              <UserPlus className="h-4 w-4" />
+              Ir para Grupos
+            </Link>
+          </Button>
+        </AlertDescription>
+      </Alert>
       
       <div className="p-4 bg-card/50 rounded-lg border border-border/60 mb-6">
         <div className="flex items-center justify-between">

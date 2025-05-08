@@ -34,8 +34,10 @@ export default function GroupFeed({ groupId, userId }: GroupFeedProps) {
   useEffect(() => {
     const loadUserRole = async () => {
       try {
-        const { role } = await getUserRole(userId);
-        setUserRole(role);
+        const { role, error } = await getUserRole(userId);
+        if (!error && role) {
+          setUserRole(role);
+        }
       } catch (err) {
         console.error('Error fetching user role:', err);
       }
@@ -252,7 +254,7 @@ export default function GroupFeed({ groupId, userId }: GroupFeedProps) {
                       </div>
                     </div>
                     <div className="flex gap-2 items-center">
-                      {canManageMembers && !member.is_creator && (
+                      {canManageMembers && !member.is_creator && !member.checked_in_today && (
                         <Button 
                           variant="outline"
                           size="sm"
@@ -316,15 +318,23 @@ export default function GroupFeed({ groupId, userId }: GroupFeedProps) {
                       </div>
                       
                       <div className="flex gap-2 items-center">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => openCheckInDialog(member)}
-                          className="flex gap-1 items-center"
-                        >
-                          <CheckSquare className="h-3.5 w-3.5" />
-                          Check-in
-                        </Button>
+                        {!member.checked_in_today && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => openCheckInDialog(member)}
+                            className="flex gap-1 items-center"
+                          >
+                            <CheckSquare className="h-3.5 w-3.5" />
+                            Check-in
+                          </Button>
+                        )}
+                        
+                        {member.checked_in_today && (
+                          <Badge variant="outline" className="border-green-500 text-green-700 bg-green-50">
+                            Check-in hoje
+                          </Badge>
+                        )}
                         
                         {!member.is_creator && (
                           <>
