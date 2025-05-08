@@ -16,7 +16,7 @@ export const getUserGroups = async (userId: string) => {
         )
       `)
       .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .order('joined_at', { ascending: false });
     
     if (error) {
       console.error('Error fetching user groups:', error);
@@ -360,7 +360,7 @@ export const checkInGroupMember = async (groupId: string, userId: string, photoB
     }
     
     // Insert check-in record
-    const { data, error } = await supabase
+    const { data: checkInData, error } = await supabase
       .from('check_ins')
       .insert({
         user_id: userId,
@@ -392,7 +392,7 @@ export const checkInGroupMember = async (groupId: string, userId: string, photoB
         .eq('id', userId);
     }
     
-    return { data, error: null, message: 'Check-in realizado com sucesso' };
+    return { data: checkInData, error: null, message: 'Check-in realizado com sucesso' };
   } catch (err) {
     console.error('Error in checkInGroupMember function:', err);
     return { error: err, message: 'Erro inesperado ao fazer check-in' };

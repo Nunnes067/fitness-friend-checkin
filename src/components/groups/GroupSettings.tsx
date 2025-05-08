@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -56,16 +57,20 @@ export function GroupSettings({ groupId, userId }: GroupSettingsProps) {
     setSaving(true);
     
     try {
-      const { data, error } = await updateGroup(groupId, {
+      const { error } = await updateGroup(groupId, {
         name,
         description
       });
       
       if (error) throw error;
       
-      if (data) {
-        setGroup({...group, ...data});
-      }
+      // Update the local group state with new values
+      setGroup({
+        ...group,
+        name,
+        description
+      });
+      
       toast.success('Grupo atualizado com sucesso!');
     } catch (error: any) {
       console.error('Error updating group:', error);
@@ -89,12 +94,14 @@ export function GroupSettings({ groupId, userId }: GroupSettingsProps) {
       
       if (error) throw error;
       
-      setGroup({
-        ...group,
-        invite_code: data.invite_code
-      });
-      
-      toast.success('Novo código de convite gerado');
+      if (data && data.invite_code) {
+        setGroup({
+          ...group,
+          invite_code: data.invite_code
+        });
+        
+        toast.success('Novo código de convite gerado');
+      }
     } catch (error: any) {
       console.error('Error generating new code:', error);
       toast.error('Erro ao gerar novo código', {
