@@ -9,9 +9,10 @@ import { Loader2, UserPlus } from 'lucide-react';
 
 interface JoinGroupFormProps {
   userId: string;
+  onSuccess?: () => void; // Added onSuccess callback prop
 }
 
-export function JoinGroupForm({ userId }: JoinGroupFormProps) {
+export function JoinGroupForm({ userId, onSuccess }: JoinGroupFormProps) {
   const [inviteCode, setInviteCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -38,10 +39,15 @@ export function JoinGroupForm({ userId }: JoinGroupFormProps) {
       
       setInviteCode('');
       
-      // Recarregar a página para mostrar o novo grupo
-      setTimeout(() => {
-        window.location.href = '/groups';
-      }, 1500);
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        // Recarregar a página para mostrar o novo grupo
+        setTimeout(() => {
+          window.location.href = '/groups';
+        }, 1500);
+      }
       
     } catch (error: any) {
       console.error('Error joining group:', error);

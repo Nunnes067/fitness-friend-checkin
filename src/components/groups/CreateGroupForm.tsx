@@ -10,9 +10,10 @@ import { Loader2, Users } from 'lucide-react';
 
 interface CreateGroupFormProps {
   userId: string;
+  onSuccess?: () => void; // Added onSuccess callback prop
 }
 
-export function CreateGroupForm({ userId }: CreateGroupFormProps) {
+export function CreateGroupForm({ userId, onSuccess }: CreateGroupFormProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,10 +46,15 @@ export function CreateGroupForm({ userId }: CreateGroupFormProps) {
       setName('');
       setDescription('');
       
-      // Recarregar a página para mostrar o novo grupo
-      setTimeout(() => {
-        window.location.href = '/groups';
-      }, 1500);
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        // Recarregar a página para mostrar o novo grupo
+        setTimeout(() => {
+          window.location.href = '/groups';
+        }, 1500);
+      }
       
     } catch (error: any) {
       console.error('Error creating group:', error);
