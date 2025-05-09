@@ -1,5 +1,33 @@
 import { supabase } from '@/integrations/supabase/client';
 
+export const getUserRole = async (userId: string) => {
+  try {
+    console.log("Fetching role for user ID:", userId);
+    
+    if (!userId) {
+      console.error("No user ID provided");
+      return { role: 'user', error: new Error("No user ID provided") };
+    }
+    
+    const { data, error } = await supabase
+      .from('app_users')
+      .select('role')
+      .eq('id', userId)
+      .single();
+      
+    if (error) {
+      console.error('Error fetching user role:', error);
+      return { role: 'user', error };
+    }
+    
+    console.log("Role data returned:", data);
+    return { role: data?.role || 'user', error: null };
+  } catch (err) {
+    console.error('Unexpected error in getUserRole:', err);
+    return { role: 'user', error: err };
+  }
+};
+
 export const getUserGroups = async (userId: string) => {
   try {
     const { data, error } = await supabase
@@ -247,26 +275,6 @@ export const getGroupMembers = async (groupId: string) => {
   } catch (err) {
     console.error('Error fetching group members:', err);
     return { data: null, error: err };
-  }
-};
-
-export const getUserRole = async (userId: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('app_users')
-      .select('role')
-      .eq('id', userId)
-      .single();
-      
-    if (error) {
-      console.error('Error fetching user role:', error);
-      return { role: 'user', error };
-    }
-    
-    return { role: data?.role || 'user', error: null };
-  } catch (err) {
-    console.error('Unexpected error in getUserRole:', err);
-    return { role: 'user', error: err };
   }
 };
 

@@ -1,8 +1,8 @@
 
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { getCurrentUser, getTodayCheckins } from '@/lib/supabase';
+import { getCurrentUser, getTodayCheckins, getUserRole } from '@/lib/supabase';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { WelcomeHeader } from '@/components/dashboard/WelcomeHeader';
 import { CheckInCard } from '@/components/dashboard/CheckInCard';
@@ -11,6 +11,8 @@ import { LoadingScreen } from '@/components/dashboard/LoadingScreen';
 import { AdminControls } from '@/components/dashboard/AdminControls';
 import { PartyCard } from '@/components/dashboard/PartyCard';
 import { InstallPrompt } from '@/components/dashboard/InstallPrompt';
+import { Button } from '@/components/ui/button';
+import { Users } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -21,6 +23,7 @@ const Dashboard = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [userRole, setUserRole] = useState<string>('user');
   
   // Detect iOS and show custom install prompt
   useEffect(() => {
@@ -95,6 +98,11 @@ const Dashboard = () => {
         
         setUser(currentUser);
         
+        // Fetch user role
+        const { role } = await getUserRole(currentUser.id);
+        console.log("User role in Dashboard:", role);
+        setUserRole(role);
+        
         // Check if user has already checked in today
         const { data } = await getTodayCheckins();
         if (data) {
@@ -157,6 +165,9 @@ const Dashboard = () => {
   if (isLoading) {
     return <LoadingScreen />;
   }
+  
+  // Check if user is personal or admin
+  const isProfessional = userRole === 'personal' || userRole === 'admin';
 
   return (
     <DashboardLayout user={user}>
@@ -167,6 +178,19 @@ const Dashboard = () => {
         userId={user?.id} 
         onActionComplete={handleAdminActionComplete} 
       />
+      
+      {/* Groups Access Button (For admins and personal trainers) */}
+      {isProfessional && (
+        <div className="mb-6">
+          <Button 
+            onClick={() => navigate('/groups')}
+            className="w-full sm:w-auto flex items-center justify-center gap-2"
+          >
+            <Users className="h-5 w-5" />
+            Acessar Grupos de Treino
+          </Button>
+        </div>
+      )}
       
       {/* Party Card */}
       <PartyCard

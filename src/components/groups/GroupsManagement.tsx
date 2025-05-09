@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +29,7 @@ export function GroupsManagement({ userId }: GroupsManagementProps) {
         
         if (error) throw error;
         
+        console.log("User role fetched:", role); // Debug log
         setUserRole(role);
       } catch (err) {
         console.error('Error fetching user role:', err);
@@ -51,7 +53,9 @@ export function GroupsManagement({ userId }: GroupsManagementProps) {
     toast.success('Você entrou no grupo');
   };
   
+  // Verify admin or personal role and log the result for debugging
   const isPersonal = userRole === 'personal' || userRole === 'admin';
+  console.log("Is personal or admin:", isPersonal, "Role:", userRole);
   
   return (
     <div className="container mx-auto px-4 py-6 max-w-5xl">
@@ -115,6 +119,7 @@ export function GroupsManagement({ userId }: GroupsManagementProps) {
               <CardContent>
                 <CreateGroupForm 
                   userId={userId}
+                  onSuccess={handleCreateSuccess}
                 />
               </CardContent>
             </Card>
@@ -129,6 +134,7 @@ export function GroupsManagement({ userId }: GroupsManagementProps) {
               <CardContent>
                 <JoinGroupForm 
                   userId={userId}
+                  onSuccess={handleJoinSuccess}
                 />
               </CardContent>
             </Card>

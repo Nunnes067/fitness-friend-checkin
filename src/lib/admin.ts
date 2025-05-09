@@ -6,6 +6,8 @@ export const isAdmin = async (userId: string) => {
   try {
     if (!userId) return false;
     
+    console.log("Checking admin status for user:", userId);
+    
     const { data, error } = await supabase
       .from('app_users')
       .select('role')
@@ -17,7 +19,8 @@ export const isAdmin = async (userId: string) => {
       return false;
     }
     
-    return data?.role === 'admin';
+    console.log("Admin check result:", data);
+    return data?.role === 'admin' || data?.role === 'personal';
   } catch (err) {
     console.error('Unexpected error checking admin status:', err);
     return false;
