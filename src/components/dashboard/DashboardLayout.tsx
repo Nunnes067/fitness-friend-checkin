@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { AnimatedLogo } from '@/components/ui/AnimatedLogo';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Download, LogOut, User, Users } from 'lucide-react';
+import { Download, LogOut, User, Users, Dumbbell } from 'lucide-react';
 import { signOut } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -37,6 +37,26 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
           </div>
           
           <div className="flex items-center space-x-2 md:space-x-4">
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden md:flex"
+              onClick={() => navigate('/fitness')}
+            >
+              <Dumbbell className="h-4 w-4 mr-2" />
+              Fitness
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/fitness')}
+              title="Fitness Hub"
+              className="md:hidden hover:text-primary hover:bg-primary/5"
+            >
+              <Dumbbell className="h-4 w-4" />
+            </Button>
+            
             <Button
               variant="outline"
               size="sm"
@@ -120,7 +140,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
       
       <footer className="border-t border-primary/10 py-6 text-center text-sm text-muted-foreground">
         <div className="container mx-auto">
-          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent font-medium">CheckMate</span> - Seu companheiro diário na academia
+          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent font-medium">CheckMate</span> - Seu companheiro completo de fitness
         </div>
       </footer>
     </div>
