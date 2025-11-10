@@ -7,388 +7,20 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.5"
+  }
   public: {
     Tables: {
-      app_users: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          is_banned: boolean
-          last_check_in: string | null
-          name: string
-          photo_url: string | null
-          role: string | null
-          streak: number
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id: string
-          is_banned?: boolean
-          last_check_in?: string | null
-          name: string
-          photo_url?: string | null
-          role?: string | null
-          streak?: number
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          is_banned?: boolean
-          last_check_in?: string | null
-          name?: string
-          photo_url?: string | null
-          role?: string | null
-          streak?: number
-        }
-        Relationships: []
-      }
-      check_ins: {
-        Row: {
-          check_in_date: string
-          count_in_ranking: boolean
-          group_id: string | null
-          id: string
-          photo_url: string | null
-          timestamp: string
-          user_id: string
-        }
-        Insert: {
-          check_in_date?: string
-          count_in_ranking?: boolean
-          group_id?: string | null
-          id?: string
-          photo_url?: string | null
-          timestamp?: string
-          user_id: string
-        }
-        Update: {
-          check_in_date?: string
-          count_in_ranking?: boolean
-          group_id?: string | null
-          id?: string
-          photo_url?: string | null
-          timestamp?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "check_ins_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "training_groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "check_ins_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "app_users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      group_members: {
-        Row: {
-          group_id: string
-          id: string
-          is_admin: boolean
-          joined_at: string
-          user_id: string
-        }
-        Insert: {
-          group_id: string
-          id?: string
-          is_admin?: boolean
-          joined_at?: string
-          user_id: string
-        }
-        Update: {
-          group_id?: string
-          id?: string
-          is_admin?: boolean
-          joined_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "group_members_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "training_groups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      group_post_likes: {
-        Row: {
-          created_at: string
-          id: string
-          post_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          post_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          post_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "group_post_likes_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "group_posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      group_posts: {
-        Row: {
-          content: string | null
-          created_at: string
-          group_id: string
-          id: string
-          image_url: string | null
-          user_id: string
-        }
-        Insert: {
-          content?: string | null
-          created_at?: string
-          group_id: string
-          id?: string
-          image_url?: string | null
-          user_id: string
-        }
-        Update: {
-          content?: string | null
-          created_at?: string
-          group_id?: string
-          id?: string
-          image_url?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "group_posts_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "training_groups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      loan_proposals: {
-        Row: {
-          created_at: string
-          due_date: string
-          id: string
-          payment_key: string | null
-          payment_link: string
-          payment_value: number
-          status: string
-          user_id: string
-          value: number
-        }
-        Insert: {
-          created_at?: string
-          due_date: string
-          id?: string
-          payment_key?: string | null
-          payment_link: string
-          payment_value: number
-          status?: string
-          user_id: string
-          value: number
-        }
-        Update: {
-          created_at?: string
-          due_date?: string
-          id?: string
-          payment_key?: string | null
-          payment_link?: string
-          payment_value?: number
-          status?: string
-          user_id?: string
-          value?: number
-        }
-        Relationships: []
-      }
-      parties: {
-        Row: {
-          checked_in: boolean
-          code: string
-          created_at: string
-          creator_id: string
-          custom_message: string | null
-          expires_at: string
-          id: string
-          is_active: boolean
-          max_members: number
-        }
-        Insert: {
-          checked_in?: boolean
-          code: string
-          created_at?: string
-          creator_id: string
-          custom_message?: string | null
-          expires_at?: string
-          id?: string
-          is_active?: boolean
-          max_members?: number
-        }
-        Update: {
-          checked_in?: boolean
-          code?: string
-          created_at?: string
-          creator_id?: string
-          custom_message?: string | null
-          expires_at?: string
-          id?: string
-          is_active?: boolean
-          max_members?: number
-        }
-        Relationships: []
-      }
-      party_members: {
-        Row: {
-          id: string
-          joined_at: string
-          party_id: string
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          joined_at?: string
-          party_id: string
-          user_id: string
-        }
-        Update: {
-          id?: string
-          joined_at?: string
-          party_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "party_members_party_id_fkey"
-            columns: ["party_id"]
-            isOneToOne: false
-            referencedRelation: "parties"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      training_groups: {
-        Row: {
-          created_at: string
-          creator_id: string
-          description: string | null
-          id: string
-          invite_code: string
-          is_active: boolean
-          name: string
-        }
-        Insert: {
-          created_at?: string
-          creator_id: string
-          description?: string | null
-          id?: string
-          invite_code: string
-          is_active?: boolean
-          name: string
-        }
-        Update: {
-          created_at?: string
-          creator_id?: string
-          description?: string | null
-          id?: string
-          invite_code?: string
-          is_active?: boolean
-          name?: string
-        }
-        Relationships: []
-      }
-      user_achievements: {
-        Row: {
-          achievement_id: string
-          awarded_at: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          achievement_id: string
-          awarded_at?: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          achievement_id?: string
-          awarded_at?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_achievements_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "app_users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      generate_group_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_party_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_users_with_seven_or_more_checkins: {
-        Args: { start_date: string }
-        Returns: {
-          id: string
-          name: string
-          email: string
-          photo_url: string
-          count: number
-        }[]
-      }
-      has_checked_in_today: {
-        Args: { p_user_id: string; p_group_id: string }
-        Returns: boolean
-      }
-      is_admin: {
-        Args: { user_id: string }
-        Returns: boolean
-      }
-      is_party_member: {
-        Args: { user_id: string; party_id: string }
-        Returns: boolean
-      }
-      process_party_check_in: {
-        Args: {
-          p_member_ids: string[]
-          p_check_in_date: string
-          p_timestamp: string
-        }
-        Returns: Json
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
@@ -399,21 +31,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -431,14 +67,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -454,14 +92,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -477,14 +117,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -492,14 +134,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
