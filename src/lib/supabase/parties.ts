@@ -125,6 +125,7 @@ export const createParty = async (userId: string) => {
     const { data: party, error: partyError } = await supabase
       .from('parties')
       .insert({
+        name: `Party ${code}`,
         creator_id: userId,
         code
       })
@@ -285,7 +286,7 @@ export const partyCheckIn = async (partyId: string, userId: string, photoBase64:
     // Verify user is creator
     const { data: party, error: fetchError } = await supabase
       .from('parties')
-      .select('creator_id, checked_in')
+      .select('creator_id')
       .eq('id', partyId)
       .single();
     
@@ -295,10 +296,6 @@ export const partyCheckIn = async (partyId: string, userId: string, photoBase64:
     
     if (party.creator_id !== userId) {
       return { error: { message: 'Somente o criador pode fazer check-in de grupo' }, message: 'Somente o criador pode fazer check-in de grupo' };
-    }
-    
-    if (party.checked_in) {
-      return { error: null, message: 'Esta party já realizou check-in hoje' };
     }
     
     // Get all members of the party
@@ -343,24 +340,13 @@ export const partyCheckIn = async (partyId: string, userId: string, photoBase64:
       }
     }
     
-    // Mark party as checked in
-    const { error: updateError } = await supabase
-      .from('parties')
-      .update({ checked_in: true })
-      .eq('id', partyId);
-    
-    if (updateError) {
-      return { error: updateError, message: 'Erro ao atualizar status da party' };
-    }
-    
     // Process check-ins for all members
     const memberIds = members.map(m => m.user_id);
-    const today = new Date().toISOString().split('T')[0];
     
     const { error: processError } = await supabase.rpc('process_party_check_in', {
-      p_member_ids: memberIds,
-      p_check_in_date: today,
-      p_timestamp: new Date().toISOString()
+      party_uuid: partyId,
+      user_uuid: userId,
+      p_member_ids: memberIds
     });
     
     if (processError) {

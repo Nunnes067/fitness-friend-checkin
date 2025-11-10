@@ -165,8 +165,8 @@ export const addAchievementToUser = async (userId: string, achievementId: string
       .from('user_achievements')
       .insert({
         user_id: userId,
-        achievement_id: achievementId,
-        awarded_at: new Date().toISOString()
+        achievement_type: achievementId,
+        earned_at: new Date().toISOString()
       })
       .select();
     

@@ -64,7 +64,7 @@ export const joinGroup = async (userId: string, inviteCode: string) => {
     const { data: groups, error: groupError } = await supabase
       .from('training_groups')
       .select('id, is_active')
-      .eq('invite_code', inviteCode)
+      .eq('code', inviteCode)
       .single();
     
     if (groupError) {
@@ -137,7 +137,7 @@ export const createGroup = async ({ name, description, creatorId }: { name: stri
         name,
         description,
         creator_id: creatorId,
-        invite_code: inviteCode,
+        code: inviteCode,
         is_active: true,
       })
       .select()
@@ -235,7 +235,7 @@ export const getGroupMembers = async (groupId: string) => {
       // Check if this member has checked in today
       const { data: checkInData, error: checkInError } = await supabase.rpc(
         'has_checked_in_today',
-        { p_user_id: member.user_id, p_group_id: groupId }
+        { user_uuid: member.user_id }
       );
       
       const hasCheckedInToday = checkInData || false;
@@ -299,7 +299,7 @@ export const checkInGroupMember = async (groupId: string, userId: string, photoB
     // Check if the user already checked in today
     const { data: hasCheckedIn, error: checkInError } = await supabase.rpc(
       'has_checked_in_today',
-      { p_user_id: userId, p_group_id: groupId }
+      { user_uuid: userId }
     );
       
     if (checkInError) {
@@ -548,7 +548,7 @@ export const getGroupDetails = async (groupId: string, userId?: string) => {
         description,
         creator_id,
         is_active,
-        invite_code
+        code
       `)
       .eq('id', groupId)
       .single();
@@ -556,6 +556,10 @@ export const getGroupDetails = async (groupId: string, userId?: string) => {
     if (error) {
       console.error('Error fetching group details:', error);
       return { data: null, error };
+    }
+    
+    if (!data) {
+      return { data: null, error: new Error('Group not found') };
     }
     
     // If userId is provided, check if the user is a member of the group
@@ -572,7 +576,10 @@ export const getGroupDetails = async (groupId: string, userId?: string) => {
       }
       
       const isMember = memberData !== null;
-      return { data: { ...data, isMember }, error: null };
+      return { 
+        data: { ...data, isMember }, 
+        error: null 
+      };
     }
     
     return { data, error: null };
@@ -615,7 +622,7 @@ export const generateNewInviteCode = async (groupId: string) => {
     
     const { error } = await supabase
       .from('training_groups')
-      .update({ invite_code: inviteCode })
+      .update({ code: inviteCode })
       .eq('id', groupId);
     
     if (error) {
