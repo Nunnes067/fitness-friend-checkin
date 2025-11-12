@@ -10,6 +10,8 @@ import DownloadApp from '@/pages/DownloadApp';
 import SmartWatch from '@/pages/SmartWatch';
 import Groups from '@/pages/Groups';
 import Fitness from '@/pages/Fitness';
+import Appointments from '@/pages/Appointments';
+
 
 function App() {
   return (
@@ -23,8 +25,10 @@ function App() {
           <Route path="/smartwatch" element={<SmartWatch />} />
           <Route path="/groups" element={<Groups />} />
           <Route path="/fitness" element={<Fitness />} />
+          <Route path="/appointments" element={<Appointments />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+
       </div>
       <Toaster />
     </BrowserRouter>

@@ -4,10 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { AnimatedLogo } from '@/components/ui/AnimatedLogo';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Download, LogOut, User, Users, Dumbbell } from 'lucide-react';
+import { NotificationsBell } from './NotificationsBell';
+import { Download, LogOut, User, Users, Dumbbell, Calendar } from 'lucide-react';
 import { signOut } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -37,6 +39,26 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
           </div>
           
           <div className="flex items-center space-x-2 md:space-x-4">
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden md:flex"
+              onClick={() => navigate('/appointments')}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Consultas
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/appointments')}
+              title="Consultas"
+              className="md:hidden hover:text-primary hover:bg-primary/5"
+            >
+              <Calendar className="h-4 w-4" />
+            </Button>
+            
             <Button
               variant="outline"
               size="sm"
@@ -76,6 +98,9 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
             >
               <Users className="h-4 w-4" />
             </Button>
+            
+            <NotificationsBell userId={user?.id} />
+
             
             <Button
               variant="outline"
