@@ -746,6 +746,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       water_intake: {
         Row: {
           amount_ml: number
@@ -935,8 +956,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_admin_by_email: { Args: { _email: string }; Returns: undefined }
       generate_group_code: { Args: never; Returns: string }
       generate_party_code: { Args: never; Returns: string }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       get_users_with_seven_or_more_checkins:
         | {
             Args: never
@@ -957,6 +983,13 @@ export type Database = {
             }[]
           }
       has_checked_in_today: { Args: { user_uuid: string }; Returns: boolean }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_admin: { Args: { user_uuid: string }; Returns: boolean }
       is_group_admin: {
         Args: { p_group_id: string; p_user_id: string }
@@ -978,7 +1011,7 @@ export type Database = {
         | { Args: { party_uuid: string; user_uuid: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "personal" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1105,6 +1138,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "personal", "user"],
+    },
   },
 } as const
