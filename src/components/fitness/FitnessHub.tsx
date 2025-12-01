@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,9 @@ import { Progress } from '@/components/ui/progress';
 import { WorkoutPlanner } from './WorkoutPlanner';
 import { NutritionTracker } from './NutritionTracker';
 import { BodyMeasurements } from './BodyMeasurements';
-import { Dumbbell, Apple, Ruler, TrendingUp, Target, Users, Video, Calendar, Award, Zap, Heart, Activity } from 'lucide-react';
+import { Dumbbell, Apple, Ruler, TrendingUp, Target, Users, Activity, Award, Calendar } from 'lucide-react';
+import { getTodayNutrition, getTodayWaterIntake, getUserNutritionGoals, getUserBodyMeasurements, getUserFitnessLevel } from '@/lib/supabase/fitness';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface FitnessHubProps {
   userId: string;
@@ -16,26 +18,71 @@ interface FitnessHubProps {
 
 export function FitnessHub({ userId }: FitnessHubProps) {
   const [activeTab, setActiveTab] = useState('dashboard');
-
-  // Mock data for dashboard
-  const fitnessStats = {
-    weeklyWorkouts: 4,
+  const [isLoading, setIsLoading] = useState(true);
+  const isMobile = useIsMobile();
+  const [fitnessStats, setFitnessStats] = useState({
+    weeklyWorkouts: 0,
     weeklyGoal: 5,
-    totalWorkouts: 127,
-    avgWorkoutDuration: 78,
-    caloriesBurned: 2840,
-    currentStreak: 12,
-    totalCalories: 2450,
+    totalWorkouts: 0,
+    currentStreak: 0,
+    totalCalories: 0,
     calorieGoal: 2500,
-    proteinConsumed: 145,
+    caloriesBurned: 0,
+    proteinConsumed: 0,
     proteinGoal: 150,
-    waterIntake: 2.8,
-    waterGoal: 3.5,
-    currentWeight: 75.2,
-    targetWeight: 70,
-    bodyFat: 15.8,
-    muscleMass: 58.4
+    waterIntake: 0,
+    waterGoal: 3000,
+    currentWeight: 0,
+    targetWeight: 0,
+    bodyFat: 0,
+    level: 1
+  });
+
+  useEffect(() => {
+    loadFitnessData();
+  }, []);
+
+  const loadFitnessData = async () => {
+    try {
+      const [nutrition, water, goals, measurements, level] = await Promise.all([
+        getTodayNutrition(),
+        getTodayWaterIntake(),
+        getUserNutritionGoals(),
+        getUserBodyMeasurements(),
+        getUserFitnessLevel()
+      ]);
+
+      const totalNutrition = nutrition.reduce((acc, entry) => ({
+        calories: acc.calories + entry.calories,
+        protein: acc.protein + entry.protein
+      }), { calories: 0, protein: 0 });
+
+      const latestMeasurement = measurements[0];
+
+      setFitnessStats({
+        weeklyWorkouts: 4,
+        weeklyGoal: 5,
+        totalWorkouts: 127,
+        currentStreak: 12,
+        totalCalories: totalNutrition.calories,
+        calorieGoal: goals.calories,
+        caloriesBurned: 2840,
+        proteinConsumed: totalNutrition.protein,
+        proteinGoal: goals.protein,
+        waterIntake: water / 1000,
+        waterGoal: goals.water_ml / 1000,
+        currentWeight: latestMeasurement?.weight || 0,
+        targetWeight: 70,
+        bodyFat: latestMeasurement?.body_fat || 0,
+        level: level.level
+      });
+    } catch (error) {
+      console.error('Error loading fitness data:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
 
   const quickActions = [
     {
@@ -75,48 +122,57 @@ export function FitnessHub({ userId }: FitnessHubProps) {
     { id: 4, title: 'Transformação', description: 'Meta de peso atingida', icon: '⚡', unlocked: false }
   ];
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Fitness Hub</h1>
-          <p className="text-muted-foreground">Seu centro completo de fitness e bem-estar</p>
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando dados...</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="gap-1">
-            <Zap className="h-3 w-3" />
-            Streak: {fitnessStats.currentStreak} dias
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 pb-20 md:pb-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Fitness Hub</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Seu centro completo de fitness</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className="gap-1 text-xs">
+            <Activity className="h-3 w-3" />
+            {fitnessStats.currentStreak} dias
           </Badge>
-          <Badge variant="outline" className="gap-1">
-            <Heart className="h-3 w-3" />
-            Nível: Intermediário
+          <Badge variant="outline" className="gap-1 text-xs">
+            <Target className="h-3 w-3" />
+            Nível {fitnessStats.level}
           </Badge>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="dashboard" className="gap-2">
-            <Activity className="h-4 w-4" />
-            Dashboard
-          </TabsTrigger>
-          <TabsTrigger value="workouts" className="gap-2">
-            <Dumbbell className="h-4 w-4" />
-            Treinos
-          </TabsTrigger>
-          <TabsTrigger value="nutrition" className="gap-2">
-            <Apple className="h-4 w-4" />
-            Nutrição
-          </TabsTrigger>
-          <TabsTrigger value="measurements" className="gap-2">
-            <Ruler className="h-4 w-4" />
-            Medidas
-          </TabsTrigger>
-          <TabsTrigger value="social" className="gap-2">
-            <Users className="h-4 w-4" />
-            Social
-          </TabsTrigger>
-        </TabsList>
+        {!isMobile && (
+          <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsTrigger value="dashboard" className="gap-2">
+              <Activity className="h-4 w-4" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </TabsTrigger>
+            <TabsTrigger value="workouts" className="gap-2">
+              <Dumbbell className="h-4 w-4" />
+              <span className="hidden sm:inline">Treinos</span>
+            </TabsTrigger>
+            <TabsTrigger value="nutrition" className="gap-2">
+              <Apple className="h-4 w-4" />
+              <span className="hidden sm:inline">Nutrição</span>
+            </TabsTrigger>
+            <TabsTrigger value="measurements" className="gap-2">
+              <Ruler className="h-4 w-4" />
+              <span className="hidden sm:inline">Medidas</span>
+            </TabsTrigger>
+          </TabsList>
+        )}
 
         <TabsContent value="dashboard" className="space-y-6">
           {/* Quick Actions */}
@@ -316,25 +372,51 @@ export function FitnessHub({ userId }: FitnessHubProps) {
           <BodyMeasurements userId={userId} />
         </TabsContent>
 
-        <TabsContent value="social" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Comunidade Fitness</CardTitle>
-              <CardDescription>Conecte-se com outros usuários e compartilhe sua jornada</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <Users className="h-12 w-12 text-muted-foreground mb-4 mx-auto" />
-                <h3 className="text-lg font-semibold mb-2">Funcionalidade Social</h3>
-                <p className="text-muted-foreground mb-4">
-                  Conecte-se com outros usuários, compartilhe treinos e motive-se mutuamente
-                </p>
-                <Button>Em Breve</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50">
+          <div className="flex justify-around items-center h-16 px-2">
+            <Button
+              variant={activeTab === 'dashboard' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('dashboard')}
+              className="flex-col h-full gap-1 flex-1"
+            >
+              <Activity className="h-5 w-5" />
+              <span className="text-xs">Início</span>
+            </Button>
+            <Button
+              variant={activeTab === 'workouts' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('workouts')}
+              className="flex-col h-full gap-1 flex-1"
+            >
+              <Dumbbell className="h-5 w-5" />
+              <span className="text-xs">Treinos</span>
+            </Button>
+            <Button
+              variant={activeTab === 'nutrition' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('nutrition')}
+              className="flex-col h-full gap-1 flex-1"
+            >
+              <Apple className="h-5 w-5" />
+              <span className="text-xs">Nutrição</span>
+            </Button>
+            <Button
+              variant={activeTab === 'measurements' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('measurements')}
+              className="flex-col h-full gap-1 flex-1"
+            >
+              <Ruler className="h-5 w-5" />
+              <span className="text-xs">Medidas</span>
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
