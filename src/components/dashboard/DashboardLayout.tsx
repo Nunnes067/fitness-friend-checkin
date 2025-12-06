@@ -4,13 +4,13 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationsBell } from './NotificationsBell';
+import { BottomNavigation } from './BottomNavigation';
 import { 
   Home, LogOut, User, Users, Dumbbell, Calendar, 
-  Download, Menu, X, Sparkles 
+  Download, Sparkles 
 } from 'lucide-react';
 import { signOut } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { useState } from 'react';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -20,7 +20,6 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, user }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const handleSignOut = async () => {
     try {
@@ -44,45 +43,49 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
   
   return (
     <div className="min-h-screen bg-background relative">
-      {/* Gradient mesh background */}
-      <div className="fixed inset-0 gradient-mesh opacity-50 pointer-events-none" />
+      {/* Subtle Gradient Background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-accent/5 rounded-full blur-3xl" />
+      </div>
       
       {/* Header */}
-      <header className="glass border-b border-border/50 sticky top-0 z-40">
-        <div className="container mx-auto py-3 px-4 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
+        <div className="container mx-auto h-14 px-4 flex items-center justify-between">
+          {/* Logo */}
           <motion.div 
-            className="flex items-center space-x-3 cursor-pointer"
+            className="flex items-center gap-2 cursor-pointer"
             onClick={() => navigate('/dashboard')}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             <div className="relative">
-              <div className="absolute inset-0 blur-xl bg-primary/40 rounded-full" />
-              <Dumbbell className="h-8 w-8 text-primary relative drop-shadow-[0_0_8px_hsl(var(--primary))]" />
+              <Dumbbell className="h-6 w-6 text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]" />
             </div>
-            <h1 className="text-xl font-bold tracking-tight">
+            <span className="text-lg font-bold hidden sm:inline">
               <span className="text-primary">Check</span>
               <span className="text-accent">Mate</span>
-            </h1>
+            </span>
           </motion.div>
           
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-1">
+          <nav className="hidden lg:flex items-center gap-1">
             {navItems.map((item) => (
               <Button
                 key={item.path}
                 variant={isActive(item.path) ? "default" : "ghost"}
                 size="sm"
                 onClick={() => navigate(item.path)}
-                className={isActive(item.path) ? "shadow-glow" : ""}
+                className={`gap-2 ${isActive(item.path) ? "shadow-[0_0_15px_hsl(var(--primary)/0.3)]" : ""}`}
               >
-                <item.icon className="h-4 w-4 mr-2" />
+                <item.icon className="h-4 w-4" />
                 {item.label}
               </Button>
             ))}
           </nav>
           
-          <div className="flex items-center space-x-2">
+          {/* Right Actions */}
+          <div className="flex items-center gap-2">
             <NotificationsBell userId={user?.id} />
             
             <Button
@@ -109,45 +112,19 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
       </header>
       
       {/* Main Content */}
-      <main className="container mx-auto py-6 px-4 safe-bottom relative z-10">
+      <main className="container mx-auto px-4 py-6 pb-24 lg:pb-6 relative z-10">
         <motion.div 
           className="max-w-6xl mx-auto"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.3 }}
         >
           {children}
         </motion.div>
       </main>
       
       {/* Bottom Navigation for Mobile */}
-      <nav className="bottom-nav lg:hidden">
-        <div className="flex items-center justify-around py-2 px-2">
-          {navItems.map((item) => (
-            <motion.button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className={`bottom-nav-item ${isActive(item.path) ? 'active' : ''}`}
-              whileTap={{ scale: 0.9 }}
-            >
-              <item.icon className={`nav-icon h-6 w-6 transition-all duration-300 ${
-                isActive(item.path) ? 'text-primary' : ''
-              }`} />
-              <span className={`text-xs mt-1 font-medium ${
-                isActive(item.path) ? 'text-primary' : ''
-              }`}>
-                {item.label}
-              </span>
-              {isActive(item.path) && (
-                <motion.div
-                  layoutId="bottomNavIndicator"
-                  className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full shadow-glow"
-                />
-              )}
-            </motion.button>
-          ))}
-        </div>
-      </nav>
+      <BottomNavigation />
     </div>
   );
 }
