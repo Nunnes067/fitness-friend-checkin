@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Index from '@/pages/Index';
 import Dashboard from '@/pages/Dashboard';
@@ -15,7 +14,7 @@ import Appointments from '@/pages/Appointments';
 
 function App() {
   return (
-    <BrowserRouter>
+    <>
       <div className="app-container">
         <Routes>
           <Route path="/" element={<Index />} />
@@ -28,10 +27,9 @@ function App() {
           <Route path="/appointments" element={<Appointments />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-
       </div>
       <Toaster />
-    </BrowserRouter>
+    </>
   );
 }
 
