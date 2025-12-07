@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, 
   Dumbbell, 
@@ -17,7 +17,6 @@ const navItems = [
 ];
 
 export function BottomNavigation() {
-  const navigate = useNavigate();
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
@@ -32,13 +31,12 @@ export function BottomNavigation() {
           const active = isActive(item.path);
           
           return (
-            <motion.button
+            <Link
               key={item.path}
-              onClick={() => navigate(item.path)}
+              to={item.path}
               className={`relative flex flex-col items-center justify-center flex-1 h-full ${
                 active ? 'text-primary' : 'text-muted-foreground'
               }`}
-              whileTap={{ scale: 0.9 }}
             >
               {/* Active Background */}
               {active && (
@@ -73,7 +71,7 @@ export function BottomNavigation() {
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
-            </motion.button>
+            </Link>
           );
         })}
       </div>
