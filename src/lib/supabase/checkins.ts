@@ -7,19 +7,22 @@ export const getDailyHistory = async (date: string) => {
       date;
     
     const { data, error } = await supabase
-      .from('app_users')
+      .from('check_ins')
       .select(`
         id,
-        name,
-        email,
+        created_at,
         photo_url,
-        check_ins:check_ins (
+        user_id,
+        check_in_date,
+        app_users!inner (
           id,
-          timestamp,
+          name,
+          email,
           photo_url
         )
       `)
-      .eq('check_ins.check_in_date', formattedDate);
+      .eq('check_in_date', formattedDate)
+      .order('created_at', { ascending: false });
     
     if (error) {
       console.error('Error fetching daily history:', error);
@@ -144,7 +147,7 @@ export const checkIn = async (userId: string, photoBase64: string | File | null)
   }
 };
 
-// Add missing getTodayCheckins function
+// Get today's check-ins
 export const getTodayCheckins = async () => {
   try {
     const today = new Date().toISOString().split('T')[0];
@@ -153,9 +156,10 @@ export const getTodayCheckins = async () => {
       .from('check_ins')
       .select(`
         id,
-        timestamp,
+        created_at,
         photo_url,
         user_id,
+        check_in_date,
         app_users!inner (
           id,
           name,
@@ -164,7 +168,7 @@ export const getTodayCheckins = async () => {
         )
       `)
       .eq('check_in_date', today)
-      .order('timestamp', { ascending: false });
+      .order('created_at', { ascending: false });
     
     if (error) {
       console.error('Error fetching today checkins:', error);

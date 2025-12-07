@@ -1,34 +1,105 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { 
   Flame, 
   Droplets, 
-  TrendingUp,
   Zap,
-  Award,
   Target
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface StatsOverviewProps {
-  streak?: number;
-  calories?: number;
-  calorieGoal?: number;
-  water?: number;
-  waterGoal?: number;
-  workoutsThisWeek?: number;
-  weeklyGoal?: number;
+  userId?: string;
 }
 
-export function StatsOverview({
-  streak = 12,
-  calories = 1850,
-  calorieGoal = 2500,
-  water = 2.1,
-  waterGoal = 3,
-  workoutsThisWeek = 4,
-  weeklyGoal = 5
-}: StatsOverviewProps) {
+export function StatsOverview({ userId }: StatsOverviewProps) {
+  const [streak, setStreak] = useState(0);
+  const [calories, setCalories] = useState(0);
+  const [calorieGoal, setCalorieGoal] = useState(2500);
+  const [water, setWater] = useState(0);
+  const [waterGoal, setWaterGoal] = useState(3000);
+  const [workoutsThisWeek, setWorkoutsThisWeek] = useState(0);
+  const [weeklyGoal] = useState(5);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!userId) return;
+
+      try {
+        // Fetch user streak
+        const { data: userData } = await supabase
+          .from('app_users')
+          .select('streak')
+          .eq('id', userId)
+          .single();
+
+        if (userData) {
+          setStreak(userData.streak || 0);
+        }
+
+        // Fetch today's nutrition
+        const today = new Date().toISOString().split('T')[0];
+        const { data: nutritionData } = await supabase
+          .from('nutrition_entries')
+          .select('calories')
+          .eq('user_id', userId)
+          .eq('entry_date', today);
+
+        if (nutritionData) {
+          const totalCalories = nutritionData.reduce((sum, entry) => sum + Number(entry.calories), 0);
+          setCalories(totalCalories);
+        }
+
+        // Fetch nutrition goals
+        const { data: goalsData } = await supabase
+          .from('nutrition_goals')
+          .select('calories, water_ml')
+          .eq('user_id', userId)
+          .single();
+
+        if (goalsData) {
+          setCalorieGoal(goalsData.calories || 2500);
+          setWaterGoal(goalsData.water_ml || 3000);
+        }
+
+        // Fetch today's water intake
+        const { data: waterData } = await supabase
+          .from('water_intake')
+          .select('amount_ml')
+          .eq('user_id', userId)
+          .eq('entry_date', today);
+
+        if (waterData) {
+          const totalWater = waterData.reduce((sum, entry) => sum + entry.amount_ml, 0);
+          setWater(totalWater);
+        }
+
+        // Fetch this week's check-ins
+        const now = new Date();
+        const dayOfWeek = now.getDay();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - dayOfWeek);
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const { data: checkinsData, count } = await supabase
+          .from('check_ins')
+          .select('id', { count: 'exact' })
+          .eq('user_id', userId)
+          .gte('check_in_date', startOfWeek.toISOString().split('T')[0]);
+
+        if (count !== null) {
+          setWorkoutsThisWeek(count);
+        }
+      } catch (err) {
+        console.error('Error fetching stats:', err);
+      }
+    };
+
+    fetchStats();
+  }, [userId]);
+
   const stats = [
     {
       label: 'Streak',
@@ -46,16 +117,16 @@ export function StatsOverview({
       icon: Zap,
       color: 'text-primary',
       bgColor: 'bg-primary/20',
-      progress: (calories / calorieGoal) * 100
+      progress: Math.min((calories / calorieGoal) * 100, 100)
     },
     {
       label: 'Água',
-      value: water.toFixed(1),
+      value: (water / 1000).toFixed(1),
       unit: 'L',
       icon: Droplets,
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/20',
-      progress: (water / waterGoal) * 100
+      progress: Math.min((water / waterGoal) * 100, 100)
     },
     {
       label: 'Treinos',
@@ -64,7 +135,7 @@ export function StatsOverview({
       icon: Target,
       color: 'text-accent',
       bgColor: 'bg-accent/20',
-      progress: (workoutsThisWeek / weeklyGoal) * 100
+      progress: Math.min((workoutsThisWeek / weeklyGoal) * 100, 100)
     }
   ];
 

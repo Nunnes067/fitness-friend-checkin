@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 
 interface User {
   id: string;
-  timestamp: string;
+  created_at: string;
   photo_url?: string;
   user_id: string;
   app_users: {
@@ -231,7 +231,7 @@ export function UserList({ refreshTrigger = 0 }: { refreshTrigger?: number }) {
                           {user.app_users?.name || 'Usuário'}
                         </div>
                         <div className="text-sm text-muted-foreground mt-1">
-                          {getTimeAgo(user.timestamp)}
+                          {getTimeAgo(user.created_at)}
                         </div>
                       </div>
                     </div>
