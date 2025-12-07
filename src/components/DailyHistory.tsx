@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Calendar, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { getDailyHistory } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,21 +15,23 @@ import { ptBR } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
-interface HistoryUser {
+interface CheckInRecord {
   id: string;
-  name: string;
-  email: string;
+  created_at: string;
   photo_url: string | null;
-  check_in?: {
+  user_id: string;
+  check_in_date: string;
+  app_users: {
     id: string;
-    timestamp: string;
+    name: string;
+    email: string;
     photo_url: string | null;
-  } | null;
+  };
 }
 
 export function DailyHistory() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [users, setUsers] = useState<HistoryUser[]>([]);
+  const [checkins, setCheckins] = useState<CheckInRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const isMobile = useIsMobile();
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
@@ -39,7 +41,6 @@ export function DailyHistory() {
     const fetchHistory = async () => {
       setIsLoading(true);
       try {
-        // Format the date to ISO string format YYYY-MM-DD
         const dateStr = selectedDate.toISOString().split('T')[0];
         const { data, error } = await getDailyHistory(dateStr);
         
@@ -49,7 +50,7 @@ export function DailyHistory() {
         }
         
         if (data) {
-          setUsers(data as unknown as HistoryUser[]);
+          setCheckins(data as CheckInRecord[]);
         }
       } catch (err) {
         console.error('Erro inesperado:', err);
@@ -63,7 +64,6 @@ export function DailyHistory() {
   
   const getInitials = (name: string | null) => {
     if (!name) return '?';
-    
     const parts = name.split(' ');
     if (parts.length === 1) return name.slice(0, 2).toUpperCase();
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -73,9 +73,7 @@ export function DailyHistory() {
     hidden: { opacity: 0 },
     visible: { 
       opacity: 1,
-      transition: { 
-        staggerChildren: 0.05
-      }
+      transition: { staggerChildren: 0.05 }
     }
   };
 
@@ -111,7 +109,10 @@ export function DailyHistory() {
             <DatePicker date={selectedDate} onSelect={setSelectedDate} />
           </div>
           <CardDescription>
-            Registro de presença para {formattedDate}
+            {checkins.length > 0 
+              ? `${checkins.length} check-in${checkins.length === 1 ? '' : 's'} em ${formattedDate}`
+              : `Nenhum check-in em ${formattedDate}`
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -135,18 +136,18 @@ export function DailyHistory() {
                 initial="hidden"
                 animate="visible"
               >
-                {users.length === 0 && (
+                {checkins.length === 0 && (
                   <motion.div 
                     className="py-8 text-center text-muted-foreground"
                     variants={itemVariants}
                   >
-                    Nenhum membro encontrado para esta data.
+                    Nenhum check-in encontrado para esta data.
                   </motion.div>
                 )}
                 
-                {users.map((user) => (
+                {checkins.map((checkin) => (
                   <motion.div 
-                    key={user.id} 
+                    key={checkin.id} 
                     className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-secondary/50 transition-colors"
                     variants={itemVariants}
                     whileHover={{ scale: 1.02 }}
@@ -155,56 +156,44 @@ export function DailyHistory() {
                       <div 
                         className="relative cursor-pointer" 
                         onClick={() => openPhotoPreview(
-                          user.check_in?.photo_url || user.photo_url || undefined,
-                          user.name
+                          checkin.photo_url || checkin.app_users?.photo_url || undefined,
+                          checkin.app_users?.name
                         )}
                       >
                         <Avatar className="h-10 w-10 border border-border">
-                          {user.check_in?.photo_url ? (
+                          {checkin.photo_url ? (
                             <AvatarImage 
-                              src={user.check_in.photo_url} 
+                              src={checkin.photo_url} 
                               alt="Check-in photo" 
                               className="object-cover"
                             />
                           ) : (
                             <AvatarImage 
-                              src={user.photo_url || ''} 
-                              alt={user.name || 'Usuário'} 
+                              src={checkin.app_users?.photo_url || ''} 
+                              alt={checkin.app_users?.name || 'Usuário'} 
                             />
                           )}
                           <AvatarFallback>
-                            {getInitials(user.name)}
+                            {getInitials(checkin.app_users?.name)}
                           </AvatarFallback>
                         </Avatar>
-                        {user.check_in?.photo_url && (
+                        {checkin.photo_url && (
                           <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-green-500 rounded-full border border-background" />
                         )}
                       </div>
                       
                       <div>
                         <div className="font-medium leading-none truncate max-w-[120px] md:max-w-full">
-                          {user.name || 'Usuário'}
+                          {checkin.app_users?.name || 'Usuário'}
                         </div>
-                        {user.check_in ? (
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {format(new Date(user.check_in.timestamp), 'HH:mm')}
-                          </div>
-                        ) : (
-                          <div className="text-sm text-red-400 mt-1">
-                            Não fez check-in
-                          </div>
-                        )}
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {format(new Date(checkin.created_at), 'HH:mm')}
+                        </div>
                       </div>
                     </div>
                     
-                    <Badge 
-                      variant={user.check_in ? "secondary" : "outline"} 
-                      className={cn(
-                        "text-xs",
-                        !user.check_in && "text-red-400 border-red-400"
-                      )}
-                    >
-                      {user.check_in ? "Registrado" : "Ausente"}
+                    <Badge variant="secondary" className="text-xs">
+                      Registrado
                     </Badge>
                   </motion.div>
                 ))}
@@ -214,7 +203,6 @@ export function DailyHistory() {
         </CardContent>
       </Card>
 
-      {/* Dialog for photo preview */}
       <Dialog open={!!selectedPhotoUrl} onOpenChange={() => closePhotoPreview()}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

@@ -200,7 +200,7 @@ const Dashboard = () => {
           <QuickWorkoutCard />
           
           {/* Stats Overview */}
-          <StatsOverview />
+          <StatsOverview userId={user?.id} />
           
           {/* Party Card */}
           <PartyCard
