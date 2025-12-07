@@ -11,14 +11,13 @@ import {
   ChevronRight,
   Zap
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 interface QuickWorkoutCardProps {
   onStartWorkout?: () => void;
 }
 
 export function QuickWorkoutCard({ onStartWorkout }: QuickWorkoutCardProps) {
-  const navigate = useNavigate();
 
   const todayWorkout = {
     name: 'Push Day',
@@ -90,10 +89,12 @@ export function QuickWorkoutCard({ onStartWorkout }: QuickWorkoutCardProps) {
               {/* Action Button */}
               <Button 
                 className="w-full h-14 text-lg font-semibold gap-3 pulse-glow"
-                onClick={() => navigate('/fitness')}
+                asChild
               >
-                <Play className="h-6 w-6" />
-                Iniciar Treino
+                <Link to="/fitness">
+                  <Play className="h-6 w-6" />
+                  Iniciar Treino
+                </Link>
               </Button>
             </div>
           </div>
@@ -109,16 +110,15 @@ export function QuickWorkoutCard({ onStartWorkout }: QuickWorkoutCardProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 + index * 0.1 }}
           >
-            <Card 
-              className="glass-card cursor-pointer hover:border-primary/50 transition-all"
-              onClick={() => navigate('/fitness')}
-            >
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl mb-2">{workout.icon}</div>
-                <p className="font-medium text-sm truncate">{workout.name}</p>
-                <p className="text-xs text-muted-foreground">{workout.duration} min</p>
-              </CardContent>
-            </Card>
+            <Link to="/fitness" className="block">
+              <Card className="glass-card cursor-pointer hover:border-primary/50 transition-all">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl mb-2">{workout.icon}</div>
+                  <p className="font-medium text-sm truncate">{workout.name}</p>
+                  <p className="text-xs text-muted-foreground">{workout.duration} min</p>
+                </CardContent>
+              </Card>
+            </Link>
           </motion.div>
         ))}
       </div>
