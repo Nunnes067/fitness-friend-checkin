@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Apple, Utensils, TrendingUp, Target, Plus, Search, Droplets } from 'lucide-react';
 import { toast } from 'sonner';
-import { foodDatabase as brazilianFoods, foodCategories, type FoodItem as BrazilianFood } from '@/data/foods';
+import { foodDatabase, foodCategories } from '@/data/foods';
 
 interface Food {
   id: string;
@@ -48,84 +48,16 @@ interface DailyNutrition {
   water: number;
 }
 
-const foodDatabase: Food[] = [
-  {
-    id: '1',
-    name: 'Peito de Frango',
-    calories_per_100g: 165,
-    protein_per_100g: 31,
-    carbs_per_100g: 0,
-    fat_per_100g: 3.6,
-    category: 'Proteína'
-  },
-  {
-    id: '2',
-    name: 'Arroz Integral',
-    calories_per_100g: 111,
-    protein_per_100g: 2.6,
-    carbs_per_100g: 22,
-    fat_per_100g: 0.9,
-    fiber_per_100g: 1.8,
-    category: 'Carboidrato'
-  },
-  {
-    id: '3',
-    name: 'Batata Doce',
-    calories_per_100g: 86,
-    protein_per_100g: 1.6,
-    carbs_per_100g: 20,
-    fat_per_100g: 0.1,
-    fiber_per_100g: 3,
-    category: 'Carboidrato'
-  },
-  {
-    id: '4',
-    name: 'Aveia',
-    calories_per_100g: 389,
-    protein_per_100g: 16.9,
-    carbs_per_100g: 66,
-    fat_per_100g: 6.9,
-    fiber_per_100g: 10.6,
-    category: 'Carboidrato'
-  },
-  {
-    id: '5',
-    name: 'Ovo',
-    calories_per_100g: 155,
-    protein_per_100g: 13,
-    carbs_per_100g: 1.1,
-    fat_per_100g: 11,
-    category: 'Proteína'
-  },
-  {
-    id: '6',
-    name: 'Salmão',
-    calories_per_100g: 208,
-    protein_per_100g: 25,
-    carbs_per_100g: 0,
-    fat_per_100g: 12,
-    category: 'Proteína'
-  },
-  {
-    id: '7',
-    name: 'Banana',
-    calories_per_100g: 89,
-    protein_per_100g: 1.1,
-    carbs_per_100g: 23,
-    fat_per_100g: 0.3,
-    fiber_per_100g: 2.6,
-    category: 'Fruta'
-  },
-  {
-    id: '8',
-    name: 'Amendoim',
-    calories_per_100g: 567,
-    protein_per_100g: 26,
-    carbs_per_100g: 16,
-    fat_per_100g: 49,
-    category: 'Gordura'
-  }
-];
+// Converter banco de dados brasileiro para o formato usado no componente
+const convertedFoodDatabase: Food[] = foodDatabase.map(food => ({
+  id: food.id,
+  name: food.name,
+  calories_per_100g: food.calories,
+  protein_per_100g: food.protein,
+  carbs_per_100g: food.carbs,
+  fat_per_100g: food.fat,
+  category: food.category
+}));
 
 export function NutritionTracker({ userId }: { userId: string }) {
   const [foodEntries, setFoodEntries] = useState<FoodEntry[]>([]);
@@ -206,7 +138,7 @@ export function NutritionTracker({ userId }: { userId: string }) {
     }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
   };
 
-  const filteredFoods = foodDatabase.filter(food => {
+  const filteredFoods = convertedFoodDatabase.filter(food => {
     const matchesSearch = food.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       food.category.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'Todos' || food.category === selectedCategory;
