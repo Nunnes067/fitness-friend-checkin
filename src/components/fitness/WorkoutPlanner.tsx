@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,9 +9,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, Clock, Dumbbell, Target, TrendingUp, Users, Video, Zap, Timer, Award, Star } from 'lucide-react';
+import { Calendar, Clock, Dumbbell, Target, TrendingUp, Users, Video, Zap, Timer, Award, Star, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  exerciseDatabase as brazilianExercises, 
+  muscleGroups as exerciseMuscleGroups, 
+  exerciseTypes,
+  equipmentTypes as exerciseEquipment 
+} from '@/data/exercises';
 
 interface Exercise {
   id: string;
@@ -43,14 +48,6 @@ interface WorkoutPlan {
   completed_count: number;
 }
 
-const muscleGroups = [
-  'Peito', 'Costas', 'Ombros', 'Bíceps', 'Tríceps', 'Pernas', 'Glúteos', 'Abdômen', 'Panturrilhas', 'Antebraços'
-];
-
-const equipmentTypes = [
-  'Peso Livre', 'Máquina', 'Cabo', 'Peso Corporal', 'Elástico', 'Kettlebell', 'TRX', 'Bola Suíça'
-];
-
 const workoutTypes = [
   'Hipertrofia', 'Força', 'Resistência', 'Cardio', 'HIIT', 'Funcional', 'Crossfit', 'Calistenia'
 ];
@@ -64,6 +61,10 @@ export function WorkoutPlanner({ userId }: { userId: string }) {
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterDifficulty, setFilterDifficulty] = useState('all');
 
+  const [exerciseSearchTerm, setExerciseSearchTerm] = useState('');
+  const [exerciseFilterMuscle, setExerciseFilterMuscle] = useState('Todos');
+  const [exerciseFilterType, setExerciseFilterType] = useState('Todos');
+
   // Workout creation state
   const [newWorkout, setNewWorkout] = useState({
     name: '',
@@ -74,8 +75,30 @@ export function WorkoutPlanner({ userId }: { userId: string }) {
     exercises: [] as Exercise[]
   });
 
-  // Exercise database (simplified - in real app would come from API)
-  const exerciseDatabase: Exercise[] = [
+  // Convert Brazilian exercises to the component's Exercise interface
+  const exerciseDatabase: Exercise[] = brazilianExercises.map(ex => ({
+    id: ex.id,
+    name: ex.name,
+    category: ex.type,
+    muscle_groups: [ex.muscleGroup],
+    equipment: ex.equipment,
+    difficulty: 'Intermediário' as const,
+    instructions: `Execute o exercício ${ex.name} com foco no grupo muscular ${ex.muscleGroup}.`,
+    sets: 3,
+    reps: '8-12',
+    rest_time: 90
+  }));
+
+  // Filter exercises
+  const filteredExerciseDatabase = exerciseDatabase.filter(ex => {
+    const matchesSearch = ex.name.toLowerCase().includes(exerciseSearchTerm.toLowerCase());
+    const matchesMuscle = exerciseFilterMuscle === 'Todos' || ex.muscle_groups.includes(exerciseFilterMuscle);
+    const matchesType = exerciseFilterType === 'Todos' || ex.category === exerciseFilterType;
+    return matchesSearch && matchesMuscle && matchesType;
+  });
+
+  // Old hard-coded database (keeping as fallback)
+  const legacyExerciseDatabase: Exercise[] = [
     {
       id: '1',
       name: 'Supino Reto',
@@ -399,31 +422,55 @@ export function WorkoutPlanner({ userId }: { userId: string }) {
             </div>
 
             <div className="space-y-4">
-              <h4 className="font-semibold">Banco de Exercícios</h4>
+              <h4 className="font-semibold">Banco de Exercícios ({filteredExerciseDatabase.length} exercícios)</h4>
+              <div className="flex flex-col md:flex-row gap-2 mb-2">
+                <Input
+                  placeholder="Buscar exercício..."
+                  value={exerciseSearchTerm}
+                  onChange={(e) => setExerciseSearchTerm(e.target.value)}
+                  className="md:max-w-xs"
+                />
+                <Select value={exerciseFilterMuscle} onValueChange={setExerciseFilterMuscle}>
+                  <SelectTrigger className="md:max-w-[180px]">
+                    <SelectValue placeholder="Grupo muscular" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {exerciseMuscleGroups.map(g => (
+                      <SelectItem key={g} value={g}>{g}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={exerciseFilterType} onValueChange={setExerciseFilterType}>
+                  <SelectTrigger className="md:max-w-[180px]">
+                    <SelectValue placeholder="Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {exerciseTypes.map(t => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
-                {exerciseDatabase.map(exercise => (
+                {filteredExerciseDatabase.slice(0, 20).map(exercise => (
                   <div key={exercise.id} className="p-3 border rounded-lg">
                     <div className="flex justify-between items-start mb-2">
-                      <h5 className="font-medium">{exercise.name}</h5>
+                      <h5 className="font-medium text-sm">{exercise.name}</h5>
                       <Badge variant="outline" className="text-xs">
-                        {exercise.difficulty}
+                        {exercise.category}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {exercise.muscle_groups.join(', ')}
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {exercise.muscle_groups.join(', ')} • {exercise.equipment}
                     </p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-muted-foreground">
-                        {exercise.equipment}
-                      </span>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => addExerciseToWorkout(exercise)}
-                      >
-                        Adicionar
-                      </Button>
-                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => addExerciseToWorkout(exercise)}
+                    >
+                      Adicionar
+                    </Button>
                   </div>
                 ))}
               </div>
