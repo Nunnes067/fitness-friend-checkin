@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,9 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Apple, Utensils, TrendingUp, Target, Plus, Search, Droplets } from 'lucide-react';
 import { toast } from 'sonner';
+import { foodDatabase as brazilianFoods, foodCategories, type FoodItem as BrazilianFood } from '@/data/foods';
 
 interface Food {
   id: string;
@@ -134,7 +135,7 @@ export function NutritionTracker({ userId }: { userId: string }) {
   const [selectedMeal, setSelectedMeal] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('breakfast');
   const [waterIntake, setWaterIntake] = useState(0);
   const [isAddingFood, setIsAddingFood] = useState(false);
-
+  const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [nutritionGoals] = useState<NutritionGoals>({
     calories: 2500,
     protein: 150,
@@ -205,10 +206,12 @@ export function NutritionTracker({ userId }: { userId: string }) {
     }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
   };
 
-  const filteredFoods = foodDatabase.filter(food =>
-    food.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    food.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredFoods = foodDatabase.filter(food => {
+    const matchesSearch = food.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      food.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'Todos' || food.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   const MacroCard = ({ title, current, goal, unit, color }: {
     title: string;
@@ -457,16 +460,31 @@ export function NutritionTracker({ userId }: { userId: string }) {
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Buscar Alimento</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Digite o nome do alimento..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 space-y-2">
+                <Label>Buscar Alimento</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Digite o nome do alimento..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div className="md:w-48 space-y-2">
+                <Label>Categoria</Label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {foodCategories.map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
