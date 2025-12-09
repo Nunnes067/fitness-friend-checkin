@@ -1,3 +1,4 @@
+import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.tsx'
@@ -13,11 +14,10 @@ const isRunningInCapacitor = (): boolean => {
 // Define uma variável global para que componentes possam verificar o ambiente
 (window as any).isInCapacitorApp = isRunningInCapacitor();
 
-// Log para depuração
-console.log('Rodando em Capacitor:', isRunningInCapacitor());
-
 createRoot(document.getElementById("root")!).render(
-  <BrowserRouter>
-    <App />
-  </BrowserRouter>
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
 );
