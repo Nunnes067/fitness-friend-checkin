@@ -1003,6 +1003,7 @@ export type Database = {
         Returns: boolean
       }
       process_party_check_in:
+        | { Args: { party_uuid: string; user_uuid: string }; Returns: boolean }
         | {
             Args: {
               p_member_ids?: string[]
@@ -1011,7 +1012,6 @@ export type Database = {
             }
             Returns: boolean
           }
-        | { Args: { party_uuid: string; user_uuid: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "personal" | "user"

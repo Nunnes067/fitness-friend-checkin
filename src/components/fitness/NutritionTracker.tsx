@@ -1,515 +1,305 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Apple, Utensils, TrendingUp, Target, Plus, Search, Droplets } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Plus, Search, Droplets, X, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { foodDatabase, foodCategories } from '@/data/foods';
 
-interface Food {
-  id: string;
-  name: string;
-  calories_per_100g: number;
-  protein_per_100g: number;
-  carbs_per_100g: number;
-  fat_per_100g: number;
-  fiber_per_100g?: number;
-  category: string;
-}
-
 interface FoodEntry {
   id: string;
-  food: Food;
+  foodId: string;
+  name: string;
   amount: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
   meal: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-  timestamp: Date;
 }
-
-interface NutritionGoals {
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  water: number;
-}
-
-interface DailyNutrition {
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  fiber: number;
-  water: number;
-}
-
-// Converter banco de dados brasileiro para o formato usado no componente
-const convertedFoodDatabase: Food[] = foodDatabase.map(food => ({
-  id: food.id,
-  name: food.name,
-  calories_per_100g: food.calories,
-  protein_per_100g: food.protein,
-  carbs_per_100g: food.carbs,
-  fat_per_100g: food.fat,
-  category: food.category
-}));
 
 export function NutritionTracker({ userId }: { userId: string }) {
   const [foodEntries, setFoodEntries] = useState<FoodEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFood, setSelectedFood] = useState<Food | null>(null);
+  const [selectedFoodId, setSelectedFoodId] = useState<string | null>(null);
   const [amount, setAmount] = useState(100);
-  const [selectedMeal, setSelectedMeal] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('breakfast');
+  const [selectedMeal, setSelectedMeal] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('lunch');
   const [waterIntake, setWaterIntake] = useState(0);
-  const [isAddingFood, setIsAddingFood] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('Todos');
-  const [nutritionGoals] = useState<NutritionGoals>({
-    calories: 2500,
-    protein: 150,
-    carbs: 300,
-    fat: 83,
-    water: 3000 // ml
-  });
 
-  const calculateDailyNutrition = (): DailyNutrition => {
-    const today = new Date().toDateString();
-    const todayEntries = foodEntries.filter(entry => entry.timestamp.toDateString() === today);
+  const goals = { calories: 2500, protein: 150, carbs: 300, fat: 83, water: 3000 };
 
-    return todayEntries.reduce((total, entry) => {
-      const multiplier = entry.amount / 100;
-      return {
-        calories: total.calories + (entry.food.calories_per_100g * multiplier),
-        protein: total.protein + (entry.food.protein_per_100g * multiplier),
-        carbs: total.carbs + (entry.food.carbs_per_100g * multiplier),
-        fat: total.fat + (entry.food.fat_per_100g * multiplier),
-        fiber: total.fiber + ((entry.food.fiber_per_100g || 0) * multiplier),
-        water: waterIntake
-      };
-    }, { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, water: waterIntake });
-  };
+  const selectedFood = selectedFoodId ? foodDatabase.find(f => f.id === selectedFoodId) : null;
 
-  const dailyNutrition = calculateDailyNutrition();
-
-  const addFoodEntry = () => {
-    if (!selectedFood) return;
-
-    const entry: FoodEntry = {
-      id: Date.now().toString(),
-      food: selectedFood,
-      amount: amount,
-      meal: selectedMeal,
-      timestamp: new Date()
-    };
-
-    setFoodEntries(prev => [...prev, entry]);
-    setSelectedFood(null);
-    setAmount(100);
-    setIsAddingFood(false);
-    toast.success('Alimento adicionado!');
-  };
-
-  const addWater = (ml: number) => {
-    setWaterIntake(prev => prev + ml);
-    toast.success(`${ml}ml de água adicionados!`);
-  };
-
-  const getMealEntries = (meal: string) => {
-    const today = new Date().toDateString();
-    return foodEntries.filter(entry => 
-      entry.meal === meal && entry.timestamp.toDateString() === today
-    );
-  };
-
-  const getMealNutrition = (meal: string) => {
-    const entries = getMealEntries(meal);
-    return entries.reduce((total, entry) => {
-      const multiplier = entry.amount / 100;
-      return {
-        calories: total.calories + (entry.food.calories_per_100g * multiplier),
-        protein: total.protein + (entry.food.protein_per_100g * multiplier),
-        carbs: total.carbs + (entry.food.carbs_per_100g * multiplier),
-        fat: total.fat + (entry.food.fat_per_100g * multiplier)
-      };
-    }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
-  };
-
-  const filteredFoods = convertedFoodDatabase.filter(food => {
-    const matchesSearch = food.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      food.category.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredFoods = foodDatabase.filter(food => {
+    const matchesSearch = food.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'Todos' || food.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const MacroCard = ({ title, current, goal, unit, color }: {
-    title: string;
-    current: number;
-    goal: number;
-    unit: string;
-    color: string;
-  }) => (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">{title}</span>
-          <span className="text-sm text-muted-foreground">
-            {current.toFixed(1)}/{goal}{unit}
-          </span>
-        </div>
-        <Progress 
-          value={(current / goal) * 100} 
-          className="h-2"
-          style={{ 
-            backgroundColor: `${color}20`,
-          }}
-        />
-        <div className="text-xs text-muted-foreground mt-1">
-          {((current / goal) * 100).toFixed(1)}% da meta
-        </div>
-      </CardContent>
-    </Card>
-  );
+  const dailyTotals = foodEntries.reduce((acc, entry) => ({
+    calories: acc.calories + entry.calories,
+    protein: acc.protein + entry.protein,
+    carbs: acc.carbs + entry.carbs,
+    fat: acc.fat + entry.fat,
+  }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
+  const addFood = () => {
+    if (!selectedFood) return;
+
+    const multiplier = amount / 100;
+    const entry: FoodEntry = {
+      id: Date.now().toString(),
+      foodId: selectedFood.id,
+      name: selectedFood.name,
+      amount,
+      calories: selectedFood.calories * multiplier,
+      protein: selectedFood.protein * multiplier,
+      carbs: selectedFood.carbs * multiplier,
+      fat: selectedFood.fat * multiplier,
+      meal: selectedMeal,
+    };
+
+    setFoodEntries(prev => [...prev, entry]);
+    setSelectedFoodId(null);
+    setAmount(100);
+    setIsDialogOpen(false);
+    toast.success(`${selectedFood.name} adicionado!`);
+  };
+
+  const removeEntry = (id: string) => {
+    setFoodEntries(prev => prev.filter(e => e.id !== id));
+    toast.success('Alimento removido');
+  };
+
+  const addWater = (ml: number) => {
+    setWaterIntake(prev => prev + ml);
+    toast.success(`+${ml}ml de água`);
+  };
+
+  const mealNames = {
+    breakfast: 'Café da Manhã',
+    lunch: 'Almoço', 
+    dinner: 'Jantar',
+    snack: 'Lanche'
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Nutrição</h2>
-          <p className="text-muted-foreground">Acompanhe sua alimentação e metas nutricionais</p>
-        </div>
-        <Button onClick={() => setIsAddingFood(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Adicionar Alimento
+        <h2 className="text-xl font-bold">Nutrição</h2>
+        <Button onClick={() => setIsDialogOpen(true)} size="sm">
+          <Plus className="h-4 w-4 mr-1" /> Adicionar
         </Button>
       </div>
 
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Resumo</TabsTrigger>
-          <TabsTrigger value="meals">Refeições</TabsTrigger>
-          <TabsTrigger value="water">Hidratação</TabsTrigger>
-          <TabsTrigger value="goals">Metas</TabsTrigger>
-        </TabsList>
+      {/* Resumo do Dia */}
+      <div className="grid grid-cols-2 gap-3">
+        <Card>
+          <CardContent className="p-3">
+            <div className="text-xs text-muted-foreground">Calorias</div>
+            <div className="text-lg font-bold">{dailyTotals.calories.toFixed(0)}</div>
+            <Progress value={(dailyTotals.calories / goals.calories) * 100} className="h-1 mt-1" />
+            <div className="text-xs text-muted-foreground">/{goals.calories} kcal</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3">
+            <div className="text-xs text-muted-foreground">Proteína</div>
+            <div className="text-lg font-bold text-green-500">{dailyTotals.protein.toFixed(0)}g</div>
+            <Progress value={(dailyTotals.protein / goals.protein) * 100} className="h-1 mt-1" />
+            <div className="text-xs text-muted-foreground">/{goals.protein}g</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3">
+            <div className="text-xs text-muted-foreground">Carboidratos</div>
+            <div className="text-lg font-bold text-orange-500">{dailyTotals.carbs.toFixed(0)}g</div>
+            <Progress value={(dailyTotals.carbs / goals.carbs) * 100} className="h-1 mt-1" />
+            <div className="text-xs text-muted-foreground">/{goals.carbs}g</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3">
+            <div className="text-xs text-muted-foreground">Gorduras</div>
+            <div className="text-lg font-bold text-red-500">{dailyTotals.fat.toFixed(0)}g</div>
+            <Progress value={(dailyTotals.fat / goals.fat) * 100} className="h-1 mt-1" />
+            <div className="text-xs text-muted-foreground">/{goals.fat}g</div>
+          </CardContent>
+        </Card>
+      </div>
 
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <MacroCard
-              title="Calorias"
-              current={dailyNutrition.calories}
-              goal={nutritionGoals.calories}
-              unit="kcal"
-              color="#3b82f6"
-            />
-            <MacroCard
-              title="Proteína"
-              current={dailyNutrition.protein}
-              goal={nutritionGoals.protein}
-              unit="g"
-              color="#10b981"
-            />
-            <MacroCard
-              title="Carboidratos"
-              current={dailyNutrition.carbs}
-              goal={nutritionGoals.carbs}
-              unit="g"
-              color="#f59e0b"
-            />
-            <MacroCard
-              title="Gorduras"
-              current={dailyNutrition.fat}
-              goal={nutritionGoals.fat}
-              unit="g"
-              color="#ef4444"
-            />
+      {/* Água */}
+      <Card>
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Droplets className="h-4 w-4 text-blue-500" />
+              <span className="font-medium">Água</span>
+            </div>
+            <span className="text-sm">{waterIntake}ml / {goals.water}ml</span>
           </div>
+          <Progress value={(waterIntake / goals.water) * 100} className="h-2 mb-2" />
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => addWater(250)}>+250ml</Button>
+            <Button variant="outline" size="sm" onClick={() => addWater(500)}>+500ml</Button>
+            <Button variant="outline" size="sm" onClick={() => addWater(1000)}>+1L</Button>
+          </div>
+        </CardContent>
+      </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Distribuição de Macros
-              </CardTitle>
+      {/* Refeições */}
+      {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map(meal => {
+        const entries = foodEntries.filter(e => e.meal === meal);
+        if (entries.length === 0) return null;
+        
+        return (
+          <Card key={meal}>
+            <CardHeader className="py-2 px-3">
+              <CardTitle className="text-sm">{mealNames[meal]}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-4 text-center">
+            <CardContent className="p-3 pt-0 space-y-2">
+              {entries.map(entry => (
+                <div key={entry.id} className="flex items-center justify-between bg-secondary/50 rounded p-2">
                   <div>
-                    <div className="text-2xl font-bold text-green-500">
-                      {((dailyNutrition.protein * 4 / dailyNutrition.calories) * 100 || 0).toFixed(1)}%
+                    <div className="font-medium text-sm">{entry.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {entry.amount}g • {entry.calories.toFixed(0)} kcal
                     </div>
-                    <div className="text-sm text-muted-foreground">Proteína</div>
                   </div>
-                  <div>
-                    <div className="text-2xl font-bold text-orange-500">
-                      {((dailyNutrition.carbs * 4 / dailyNutrition.calories) * 100 || 0).toFixed(1)}%
-                    </div>
-                    <div className="text-sm text-muted-foreground">Carboidratos</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-red-500">
-                      {((dailyNutrition.fat * 9 / dailyNutrition.calories) * 100 || 0).toFixed(1)}%
-                    </div>
-                    <div className="text-sm text-muted-foreground">Gorduras</div>
-                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => removeEntry(entry.id)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
                 </div>
-              </div>
+              ))}
             </CardContent>
           </Card>
-        </TabsContent>
+        );
+      })}
 
-        <TabsContent value="meals" className="space-y-4">
-          {['breakfast', 'lunch', 'dinner', 'snack'].map(meal => {
-            const mealNames = {
-              breakfast: 'Café da Manhã',
-              lunch: 'Almoço',
-              dinner: 'Jantar',
-              snack: 'Lanche'
-            };
-            
-            const entries = getMealEntries(meal);
-            const nutrition = getMealNutrition(meal);
+      {foodEntries.length === 0 && (
+        <Card>
+          <CardContent className="p-6 text-center text-muted-foreground">
+            Nenhum alimento adicionado hoje. Clique em "Adicionar" para começar.
+          </CardContent>
+        </Card>
+      )}
 
-            return (
-              <Card key={meal}>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle>{mealNames[meal as keyof typeof mealNames]}</CardTitle>
-                    <div className="text-sm text-muted-foreground">
-                      {nutrition.calories.toFixed(0)} kcal
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {entries.length > 0 ? (
-                    <div className="space-y-2">
-                      {entries.map(entry => (
-                        <div key={entry.id} className="flex justify-between items-center p-2 bg-secondary rounded">
-                          <div>
-                            <span className="font-medium">{entry.food.name}</span>
-                            <span className="text-sm text-muted-foreground ml-2">
-                              {entry.amount}g
-                            </span>
-                          </div>
-                          <div className="text-sm">
-                            {((entry.food.calories_per_100g * entry.amount) / 100).toFixed(0)} kcal
-                          </div>
-                        </div>
-                      ))}
-                      <div className="flex justify-between text-sm pt-2 border-t">
-                        <span>Total:</span>
-                        <span>
-                          {nutrition.calories.toFixed(0)} kcal | 
-                          P: {nutrition.protein.toFixed(1)}g | 
-                          C: {nutrition.carbs.toFixed(1)}g | 
-                          G: {nutrition.fat.toFixed(1)}g
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-center py-4">
-                      Nenhum alimento adicionado
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </TabsContent>
-
-        <TabsContent value="water" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Droplets className="h-5 w-5" />
-                Hidratação Diária
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-blue-500 mb-2">
-                  {waterIntake}ml
-                </div>
-                <div className="text-muted-foreground">
-                  Meta: {nutritionGoals.water}ml
-                </div>
-                <Progress 
-                  value={(waterIntake / nutritionGoals.water) * 100} 
-                  className="mt-4"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => addWater(250)}
-                  className="flex-col h-16"
-                >
-                  <span className="text-xs">Copo</span>
-                  <span className="font-bold">250ml</span>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => addWater(500)}
-                  className="flex-col h-16"
-                >
-                  <span className="text-xs">Garrafa</span>
-                  <span className="font-bold">500ml</span>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => addWater(750)}
-                  className="flex-col h-16"
-                >
-                  <span className="text-xs">Garrafa G</span>
-                  <span className="font-bold">750ml</span>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => addWater(1000)}
-                  className="flex-col h-16"
-                >
-                  <span className="text-xs">Litro</span>
-                  <span className="font-bold">1000ml</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* Add Food Dialog */}
-      <Dialog open={isAddingFood} onOpenChange={setIsAddingFood}>
-        <DialogContent className="max-w-2xl">
+      {/* Dialog para adicionar alimento */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Adicionar Alimento</DialogTitle>
-            <DialogDescription>
-              Busque e adicione alimentos às suas refeições
-            </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 space-y-2">
-                <Label>Buscar Alimento</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Digite o nome do alimento..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+          <div className="space-y-3 flex-1 overflow-hidden flex flex-col">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar alimento..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
               </div>
-              <div className="md:w-48 space-y-2">
-                <Label>Categoria</Label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {foodCategories.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {foodCategories.map(cat => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-60 overflow-y-auto">
+            <div className="text-xs text-muted-foreground">
+              {filteredFoods.length} alimentos encontrados
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-1 min-h-0 max-h-48">
               {filteredFoods.map(food => (
-                <div 
-                  key={food.id} 
-                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                    selectedFood?.id === food.id ? 'border-primary bg-primary/5' : 'hover:bg-secondary'
+                <div
+                  key={food.id}
+                  onClick={() => setSelectedFoodId(food.id)}
+                  className={`p-2 rounded cursor-pointer transition-colors ${
+                    selectedFoodId === food.id 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'bg-secondary hover:bg-secondary/80'
                   }`}
-                  onClick={() => setSelectedFood(food)}
                 >
-                  <div className="flex justify-between items-center mb-1">
-                    <h4 className="font-medium">{food.name}</h4>
-                    <Badge variant="outline">{food.category}</Badge>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-sm">{food.name}</span>
+                    <Badge variant="outline" className="text-xs">{food.category}</Badge>
                   </div>
-                  <div className="text-xs text-muted-foreground grid grid-cols-2 gap-1">
-                    <span>{food.calories_per_100g} kcal/100g</span>
-                    <span>P: {food.protein_per_100g}g</span>
-                    <span>C: {food.carbs_per_100g}g</span>
-                    <span>G: {food.fat_per_100g}g</span>
+                  <div className="text-xs opacity-80">
+                    {food.calories} kcal | P:{food.protein}g | C:{food.carbs}g | G:{food.fat}g
                   </div>
                 </div>
               ))}
             </div>
 
             {selectedFood && (
-              <div className="space-y-4 p-4 border rounded-lg bg-secondary/50">
-                <h4 className="font-semibold">{selectedFood.name}</h4>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Quantidade (g)</Label>
+              <div className="border-t pt-3 space-y-3">
+                <div className="font-medium">{selectedFood.name}</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Quantidade (g)</Label>
                     <Input
                       type="number"
                       value={amount}
                       onChange={(e) => setAmount(Number(e.target.value))}
-                      min="1"
-                      max="1000"
+                      min={1}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Refeição</Label>
-                    <select 
-                      value={selectedMeal} 
-                      onChange={(e) => setSelectedMeal(e.target.value as any)}
-                      className="w-full p-2 border rounded"
-                    >
-                      <option value="breakfast">Café da Manhã</option>
-                      <option value="lunch">Almoço</option>
-                      <option value="dinner">Jantar</option>
-                      <option value="snack">Lanche</option>
-                    </select>
+                  <div>
+                    <Label className="text-xs">Refeição</Label>
+                    <Select value={selectedMeal} onValueChange={(v: any) => setSelectedMeal(v)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="breakfast">Café da Manhã</SelectItem>
+                        <SelectItem value="lunch">Almoço</SelectItem>
+                        <SelectItem value="dinner">Jantar</SelectItem>
+                        <SelectItem value="snack">Lanche</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-4 gap-2 text-center text-sm">
-                  <div>
-                    <div className="font-bold">
-                      {((selectedFood.calories_per_100g * amount) / 100).toFixed(0)}
+                <div className="text-sm bg-secondary p-2 rounded">
+                  <div className="grid grid-cols-4 gap-2 text-center">
+                    <div>
+                      <div className="font-bold">{(selectedFood.calories * amount / 100).toFixed(0)}</div>
+                      <div className="text-xs text-muted-foreground">kcal</div>
                     </div>
-                    <div className="text-muted-foreground">kcal</div>
-                  </div>
-                  <div>
-                    <div className="font-bold">
-                      {((selectedFood.protein_per_100g * amount) / 100).toFixed(1)}
+                    <div>
+                      <div className="font-bold text-green-500">{(selectedFood.protein * amount / 100).toFixed(1)}</div>
+                      <div className="text-xs text-muted-foreground">prot</div>
                     </div>
-                    <div className="text-muted-foreground">Proteína</div>
-                  </div>
-                  <div>
-                    <div className="font-bold">
-                      {((selectedFood.carbs_per_100g * amount) / 100).toFixed(1)}
+                    <div>
+                      <div className="font-bold text-orange-500">{(selectedFood.carbs * amount / 100).toFixed(1)}</div>
+                      <div className="text-xs text-muted-foreground">carb</div>
                     </div>
-                    <div className="text-muted-foreground">Carboidratos</div>
-                  </div>
-                  <div>
-                    <div className="font-bold">
-                      {((selectedFood.fat_per_100g * amount) / 100).toFixed(1)}
+                    <div>
+                      <div className="font-bold text-red-500">{(selectedFood.fat * amount / 100).toFixed(1)}</div>
+                      <div className="text-xs text-muted-foreground">gord</div>
                     </div>
-                    <div className="text-muted-foreground">Gorduras</div>
                   </div>
                 </div>
+                <Button onClick={addFood} className="w-full">
+                  Adicionar {selectedFood.name}
+                </Button>
               </div>
             )}
-
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsAddingFood(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={addFoodEntry} disabled={!selectedFood}>
-                Adicionar
-              </Button>
-            </div>
           </div>
         </DialogContent>
       </Dialog>
