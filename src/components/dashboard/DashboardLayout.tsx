@@ -9,7 +9,6 @@ import {
   Home, User, Users, Dumbbell, Calendar, 
   Download, Sparkles, Settings
 } from 'lucide-react';
-import { signOut } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 interface DashboardLayoutProps {
@@ -20,16 +19,6 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, user }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      navigate('/');
-    } catch (err) {
-      console.error('Erro ao sair:', err);
-      toast.error('Falha ao sair');
-    }
-  };
 
   const navItems = [
     { icon: Home, label: 'Início', path: '/dashboard' },
