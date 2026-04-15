@@ -102,10 +102,10 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleSignOut}
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => navigate('/profile')}
+              title="Configurações"
             >
-              <LogOut className="h-5 w-5" />
+              <Settings className="h-5 w-5" />
             </Button>
           </div>
         </div>
