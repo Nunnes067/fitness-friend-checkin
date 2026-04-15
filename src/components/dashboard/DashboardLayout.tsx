@@ -6,8 +6,8 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationsBell } from './NotificationsBell';
 import { BottomNavigation } from './BottomNavigation';
 import { 
-  Home, LogOut, User, Users, Dumbbell, Calendar, 
-  Download, Sparkles 
+  Home, User, Users, Dumbbell, Calendar, 
+  Download, Sparkles, Settings
 } from 'lucide-react';
 import { signOut } from '@/lib/supabase';
 import { toast } from 'sonner';
