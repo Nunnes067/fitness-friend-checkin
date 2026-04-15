@@ -6,10 +6,9 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationsBell } from './NotificationsBell';
 import { BottomNavigation } from './BottomNavigation';
 import { 
-  Home, LogOut, User, Users, Dumbbell, Calendar, 
-  Download, Sparkles 
+  Home, User, Users, Dumbbell, Calendar, 
+  Download, Sparkles, Settings
 } from 'lucide-react';
-import { signOut } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 interface DashboardLayoutProps {
@@ -20,16 +19,6 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, user }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      navigate('/');
-    } catch (err) {
-      console.error('Erro ao sair:', err);
-      toast.error('Falha ao sair');
-    }
-  };
 
   const navItems = [
     { icon: Home, label: 'Início', path: '/dashboard' },
@@ -102,10 +91,10 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleSignOut}
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => navigate('/profile')}
+              title="Configurações"
             >
-              <LogOut className="h-5 w-5" />
+              <Settings className="h-5 w-5" />
             </Button>
           </div>
         </div>

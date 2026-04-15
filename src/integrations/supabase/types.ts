@@ -16,8 +16,13 @@ export type Database = {
     Tables: {
       app_users: {
         Row: {
+          activity_level: string | null
+          biological_sex: string | null
+          birth_date: string | null
           created_at: string | null
           email: string
+          fitness_goal: string | null
+          height_cm: number | null
           id: string
           is_banned: boolean | null
           last_check_in: string | null
@@ -26,10 +31,16 @@ export type Database = {
           role: string | null
           streak: number | null
           updated_at: string | null
+          weight_kg: number | null
         }
         Insert: {
+          activity_level?: string | null
+          biological_sex?: string | null
+          birth_date?: string | null
           created_at?: string | null
           email: string
+          fitness_goal?: string | null
+          height_cm?: number | null
           id: string
           is_banned?: boolean | null
           last_check_in?: string | null
@@ -38,10 +49,16 @@ export type Database = {
           role?: string | null
           streak?: number | null
           updated_at?: string | null
+          weight_kg?: number | null
         }
         Update: {
+          activity_level?: string | null
+          biological_sex?: string | null
+          birth_date?: string | null
           created_at?: string | null
           email?: string
+          fitness_goal?: string | null
+          height_cm?: number | null
           id?: string
           is_banned?: boolean | null
           last_check_in?: string | null
@@ -50,6 +67,7 @@ export type Database = {
           role?: string | null
           streak?: number | null
           updated_at?: string | null
+          weight_kg?: number | null
         }
         Relationships: []
       }
