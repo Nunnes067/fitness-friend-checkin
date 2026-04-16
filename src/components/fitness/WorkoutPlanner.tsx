@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar, Clock, Dumbbell, Target, TrendingUp, Users, Video, Zap, Timer, Award, Star, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ActiveWorkout } from './ActiveWorkout';
 import { 
   exerciseDatabase as brazilianExercises, 
   muscleGroups as exerciseMuscleGroups, 
