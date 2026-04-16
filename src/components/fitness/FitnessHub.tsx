@@ -88,6 +88,7 @@ export function FitnessHub({ userId }: FitnessHubProps) {
   const tabs = [
     { id: 'home' as TabType, label: 'Início', icon: Activity },
     { id: 'workouts' as TabType, label: 'Treinos', icon: Dumbbell },
+    { id: 'library' as TabType, label: 'Exercícios', icon: BookOpen },
     { id: 'nutrition' as TabType, label: 'Nutrição', icon: Apple },
     { id: 'measurements' as TabType, label: 'Medidas', icon: Ruler },
   ];
