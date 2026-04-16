@@ -335,6 +335,17 @@ export function FitnessHub({ userId }: FitnessHubProps) {
           </motion.div>
         )}
 
+        {activeTab === 'library' && (
+          <motion.div
+            key="library"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <ExerciseLibrary />
+          </motion.div>
+        )}
+
         {activeTab === 'nutrition' && (
           <motion.div
             key="nutrition"
