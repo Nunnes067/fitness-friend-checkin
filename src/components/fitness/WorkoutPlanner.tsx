@@ -301,7 +301,11 @@ export function WorkoutPlanner({ userId }: { userId: string }) {
 
         <TabsContent value="active" className="space-y-4">
           {currentWorkout ? (
-            <WorkoutSession workout={currentWorkout} onComplete={() => setCurrentWorkout(null)} />
+            <ActiveWorkout
+              workout={currentWorkout}
+              onComplete={() => { setCurrentWorkout(null); setActiveTab('my-workouts'); }}
+              onCancel={() => { setCurrentWorkout(null); setActiveTab('browse'); }}
+            />
           ) : (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
