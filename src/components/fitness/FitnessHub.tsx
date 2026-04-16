@@ -8,10 +8,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { WorkoutPlanner } from './WorkoutPlanner';
 import { NutritionTracker } from './NutritionTracker';
 import { BodyMeasurements } from './BodyMeasurements';
+import { ExerciseLibrary } from './ExerciseLibrary';
 import { 
   Dumbbell, Apple, Ruler, Activity, Target, 
   Flame, Trophy, Play, Clock, ChevronRight,
-  Zap, Droplets, TrendingUp
+  Zap, Droplets, TrendingUp, BookOpen
 } from 'lucide-react';
 import { getTodayNutrition, getTodayWaterIntake, getUserNutritionGoals, getUserBodyMeasurements, getUserFitnessLevel } from '@/lib/supabase/fitness';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -20,7 +21,7 @@ interface FitnessHubProps {
   userId: string;
 }
 
-type TabType = 'home' | 'workouts' | 'nutrition' | 'measurements';
+type TabType = 'home' | 'workouts' | 'nutrition' | 'measurements' | 'library';
 
 export function FitnessHub({ userId }: FitnessHubProps) {
   const [activeTab, setActiveTab] = useState<TabType>('home');
@@ -87,6 +88,7 @@ export function FitnessHub({ userId }: FitnessHubProps) {
   const tabs = [
     { id: 'home' as TabType, label: 'Início', icon: Activity },
     { id: 'workouts' as TabType, label: 'Treinos', icon: Dumbbell },
+    { id: 'library' as TabType, label: 'Exercícios', icon: BookOpen },
     { id: 'nutrition' as TabType, label: 'Nutrição', icon: Apple },
     { id: 'measurements' as TabType, label: 'Medidas', icon: Ruler },
   ];
@@ -330,6 +332,17 @@ export function FitnessHub({ userId }: FitnessHubProps) {
             exit={{ opacity: 0, y: -10 }}
           >
             <WorkoutPlanner userId={userId} />
+          </motion.div>
+        )}
+
+        {activeTab === 'library' && (
+          <motion.div
+            key="library"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <ExerciseLibrary />
           </motion.div>
         )}
 
